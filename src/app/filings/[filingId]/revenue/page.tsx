@@ -405,10 +405,23 @@ function EntryRow({
                 Generate
               </button>
             </div>
+            {entry.suggestedNoInvoiceReason && (
+              <button
+                onClick={() =>
+                  onUpdate({ status: "NO_INVOICE_NEEDED", noInvoiceReason: entry.suggestedNoInvoiceReason })
+                }
+                className="rounded border border-amber-300 bg-amber-50 px-2 py-0.5 text-left text-xs text-amber-900 hover:bg-amber-100"
+                title="Accept the AI's suggested reason as-is"
+              >
+                ✓ Accept AI suggestion: {entry.suggestedNoInvoiceReason}
+              </button>
+            )}
             <div className="flex gap-1">
               <input
                 className="rounded border border-slate-300 px-1 py-0.5 text-xs"
-                placeholder="Reason (e.g. own transfer)"
+                placeholder={
+                  entry.suggestedNoInvoiceReason ? "...or a different reason" : "Reason (e.g. own transfer)"
+                }
                 value={noInvoiceReason}
                 onChange={(e) => setNoInvoiceReason(e.target.value)}
               />

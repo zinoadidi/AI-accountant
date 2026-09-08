@@ -189,7 +189,16 @@ human-entered value silently.
     not built yet, rather than hidden.
 - **Phase 1:** bank connection (aggregator, LHV first) + transaction
   import + reconciliation against categorized documents; ledger view.
-  Manual statement upload remains available throughout.
+  Manual statement upload remains available throughout. **Design
+  commitment carried over from Phase 2a:** the bank statement is the
+  source of truth, and a business owner generally can't tell on sight
+  which transactions need an outgoing invoice and which don't — so the
+  needs-invoice/doesn't-need-invoice recommendation must be produced
+  as part of the same analysis pass that imports and categorizes each
+  transaction, not left as a separate task for a human to work out
+  from scratch afterward. Every imported transaction should arrive
+  with `suggestedNoInvoiceReason` already populated where applicable,
+  ready to accept in one click (see Phase 2a) — never a blank slate.
 - **Phase 2a (shipped, ahead of Phase 1):** missing-invoice generation.
   A business uploads its own invoice design as HTML with
   `{{placeholder}}` tokens (`InvoiceTemplate`); each candidate outgoing
@@ -198,14 +207,19 @@ human-entered value silently.
   or via CSV export → edit in a spreadsheet → re-upload (update-by-id or
   create-new). Whether an entry needs an invoice at all is always an
   explicit human decision with a stated reason — an AI heuristic
-  (`suggestNoInvoiceReason`) only *suggests* likely exceptions (refunds,
-  transfers between own accounts, bank interest/fees) for a human to
-  confirm; it never asserts a legal conclusion, since real Estonian
+  (`suggestNoInvoiceReason`) *suggests* likely exceptions (refunds,
+  transfers between own accounts, bank interest/fees), surfaced as a
+  one-click "Accept AI suggestion" action right where the decision is
+  made, not just informational text a human has to act on manually. It
+  never asserts a legal conclusion on its own, since real Estonian
   invoicing-requirement thresholds need a lawyer's sign-off, not a
-  keyword match. Built standalone (manual/CSV entry) since it doesn't
-  need live bank data to be useful — once Phase 1 ships, unmatched
-  revenue transactions will create these `RevenueEntry` rows
-  automatically instead of requiring manual/CSV entry.
+  keyword match — but the recommendation itself is always offered
+  up front, because expecting an unaided human judgment call on every
+  line is not realistic at any volume. Built standalone (manual/CSV
+  entry) since it doesn't need live bank data to be useful — once
+  Phase 1 ships, unmatched revenue transactions will create these
+  `RevenueEntry` rows automatically, pre-populated with the same
+  suggestion, instead of requiring manual/CSV entry.
 - **Phase 2b (not yet built):** KMD (VAT return) draft generation from
   the reconciled ledger; first cut of the accountant marketplace (order
   a vetted accountant, which creates the same membership/engagement
