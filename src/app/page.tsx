@@ -14,10 +14,10 @@ export default async function Home() {
       </p>
       {session ? (
         <Link
-          href="/businesses/new"
+          href="/businesses"
           className="rounded-md bg-slate-900 px-4 py-2 text-white hover:bg-slate-700"
         >
-          Create or join a business
+          Go to your businesses
         </Link>
       ) : (
         <div className="flex gap-3">

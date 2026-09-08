@@ -23,7 +23,7 @@ export default function LoginPage() {
       setError("Invalid email or password");
       return;
     }
-    router.push("/businesses/new");
+    router.push("/businesses");
   }
 
   return (

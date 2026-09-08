@@ -2,12 +2,15 @@
 
 AI-assisted bookkeeping and tax filing for small businesses, starting in
 Estonia. See [`PROPOSAL.md`](./PROPOSAL.md) for the full product/technical
-proposal, open questions, and roadmap.
+proposal, confirmed decisions, and roadmap.
 
-This repo currently implements the Phase 0 vertical slice: sign up,
-create or join a business, invite team members by role (owner,
-accountant, bookkeeper, employee, viewer), and upload documents with
-AI-assisted category suggestions.
+This repo implements Phase 0 and Phase 0.5: sign up, create or join
+multiple businesses (with a switcher), invite team members by role
+(owner, accountant, bookkeeper, employee, viewer), upload documents
+with AI-assisted (optional) category suggestions, open filing periods
+and engage an accountant scoped to just one filing, pick a pricing
+mode, and disclaimer checkpoints instead of a mandatory per-item
+review gate.
 
 ## Getting started
 
@@ -25,24 +28,35 @@ Then open http://localhost:3000.
 
 - Next.js (App Router) + TypeScript + Tailwind CSS
 - Prisma ORM (SQLite for local dev; swap `DATABASE_URL`/provider for
-  Postgres in production)
+  Postgres in production — deliberately not done yet, see PROPOSAL.md)
 - NextAuth (credentials provider) for authentication
 
 ## Project layout
 
 - `prisma/schema.prisma` — data model: businesses, memberships/roles,
-  invitations, documents (with AI-suggested vs. human-confirmed fields
-  kept distinct throughout)
+  invitations, documents (AI-suggested vs. human-confirmed fields kept
+  distinct), filing periods, and per-filing accountant engagements
 - `src/lib/categorize.ts` — the single seam for document categorization;
   currently a keyword heuristic, designed to be swapped for an LLM call
+- `src/lib/permissions.ts` — access checks, including `getFilingAccess`,
+  which grants filing-scoped access via either a standing `Membership`
+  or an active per-filing `Engagement`
+- `src/components/Disclaimer.tsx` / `ComingSoon.tsx` — the two UI
+  patterns confirmed in the proposal: liability disclaimers at
+  strategic checkpoints instead of mandatory per-item review, and a
+  visible "Coming soon" modal for features not built yet instead of
+  hiding them
 - `src/app/api/**` — REST-ish route handlers for auth, businesses,
-  invitations, and documents
-- `src/app/**` — pages for sign up/login, business creation, team
-  management, and document upload/review
+  invitations, documents, filings, and engagements
+- `src/app/**` — pages for sign up/login, the business switcher,
+  business dashboard, team, documents, filings, billing, and the
+  invitation/engagement accept flows
 
 ## What's next
 
 Bank statement import/reconciliation, invoice generation from uploaded
-company templates, VAT return (KMD) drafting, and the
-accountant-review-and-sign workflow (Mobile-ID/Smart-ID via a signing
-provider) are described in `PROPOSAL.md` and are not yet implemented.
+company templates, real VAT return (KMD) drafting, and live e-signature
+(Mobile-ID/Smart-ID via a signing provider) or EMTA/X-tee submission
+are described in `PROPOSAL.md` (Phases 1–5) and not yet implemented —
+the filing page's preview/download/"mark as filed" actions are
+placeholders that establish the workflow shape.

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
+import { Disclaimer } from "@/components/Disclaimer";
 
 type Doc = {
   id: string;
@@ -64,10 +65,13 @@ export default function DocumentsPage() {
   return (
     <main className="mx-auto max-w-2xl px-4 py-16">
       <h1 className="mb-2 text-2xl font-semibold">Documents</h1>
-      <p className="mb-6 text-sm text-slate-600">
+      <p className="mb-4 text-sm text-slate-600">
         Upload receipts, bank statements, or invoices. Each one gets an
-        AI-suggested category to confirm or correct.
+        AI-suggested category — correcting it helps accuracy, but it&apos;s
+        not required before moving on.
       </p>
+
+      <Disclaimer />
 
       <input ref={fileInputRef} type="file" onChange={handleUpload} disabled={uploading} />
       {uploading && <p className="mt-2 text-sm text-slate-500">Uploading and categorizing...</p>}
@@ -85,7 +89,7 @@ export default function DocumentsPage() {
                 {d.confirmedCategory
                   ? `Confirmed: ${d.confirmedCategory}`
                   : d.suggestedCategory
-                    ? `AI suggests: ${d.suggestedCategory} (${Math.round((d.aiConfidence ?? 0) * 100)}% confidence)`
+                    ? `AI suggests: ${d.suggestedCategory} (${Math.round((d.aiConfidence ?? 0) * 100)}% confidence) — unreviewed`
                     : "Categorizing..."}
               </p>
             </div>
@@ -93,8 +97,9 @@ export default function DocumentsPage() {
               <button
                 onClick={() => confirmCategory(d.id, d.suggestedCategory as string)}
                 className="shrink-0 rounded-md border border-slate-300 px-3 py-1 text-sm hover:bg-slate-100"
+                title="Optional — not required to proceed"
               >
-                Confirm
+                Confirm (optional)
               </button>
             )}
           </li>

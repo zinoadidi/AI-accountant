@@ -166,17 +166,27 @@ human-entered value silently.
 - **Phase 0 (shipped):** auth, business creation, team invitations
   with roles, document upload + AI-assisted categorization stub.
   Foundation for everything else.
-- **Phase 0.5 (next, given the confirmed decisions above):**
-  - Multi-entity: a business switcher, and confirming memberships
-    compose cleanly across multiple companies per user.
-  - Dual accountant engagement: add the per-filing/per-period scoped
-    `Engagement` alongside the existing standing `Membership`.
-  - Loosen the document review flow from a required per-item confirm
-    gate to optional/informational, and add the disclaimer checkpoints
-    (before submit/download/preview) that carry the actual liability
-    framing.
-  - Pricing/plan selection scaffolding (per-report, per-professional-fee,
-    subscription tiers) even before real billing is wired up.
+- **Phase 0.5 (shipped):**
+  - Multi-entity: a `/businesses` switcher listing every business a user
+    belongs to, with a shared nav layout across business-scoped pages.
+  - `FilingPeriod` — the scoping unit for a single statutory filing (a
+    VAT return, an annual report) — plus dual accountant engagement:
+    a per-filing `Engagement` (invited by email, accepted like a team
+    invite, grants access to only that one filing) alongside the
+    existing standing `Membership`. Verified an engaged-only accountant
+    (no `Membership` row) can open their filing but is blocked from the
+    business's documents/team/dashboard.
+  - Disclaimer-based liability UX: a reusable banner shown on the
+    documents page and before preview/download/"mark as filed" on a
+    filing; the AI-category confirm button is now explicitly labeled
+    optional and nothing gates on it.
+  - Pricing mode scaffolding (`Business.pricingMode`: pay-per-report /
+    professional-fee / subscription) with a plan-picker page — no
+    payment processing wired up.
+  - The "Coming soon" pattern: a reusable modal used for the automated
+    EMTA/X-tee submission button (filing page) and for payment
+    activation (billing page) — visible, clickable, honest about what's
+    not built yet, rather than hidden.
 - **Phase 1:** bank connection (aggregator, LHV first) + transaction
   import + reconciliation against categorized documents; ledger view.
   Manual statement upload remains available throughout.
@@ -196,13 +206,14 @@ human-entered value silently.
   Estonia (Latvia/Lithuania share similar e-invoicing/Peppol
   infrastructure and are natural next markets).
 
-## 7. What's shipped vs. what changed today
+## 7. What's shipped
 
-The Phase 0 code (sign up, create or join a business, invite team
-members by role, upload documents with AI-assisted category
-suggestions) is unchanged and working. This revision only resolves the
-open questions in Section 4 — several of them (multi-entity, dual
-accountant engagement, flexible pricing, the looser review-gate/
-disclaimer approach) change scope beyond what Phase 0 currently
-implements; see Phase 0.5 in the roadmap for what that implies to
-build next.
+Phase 0 and Phase 0.5 are both implemented: sign up, create or join a
+business, a multi-business switcher, team invitations by role, document
+upload with AI-assisted (and explicitly optional) category suggestions,
+filing periods with per-filing accountant engagements, disclaimer
+checkpoints instead of a mandatory review gate, pricing-mode selection,
+and the "Coming soon" pattern for automated EMTA submission and payment
+processing. Phase 1 onward (real bank sync, invoice generation, actual
+report drafting, e-signature, live EMTA filing) is not yet built — see
+the roadmap above.

@@ -42,7 +42,7 @@ export default function SignupPage() {
       router.push("/login");
       return;
     }
-    router.push("/businesses/new");
+    router.push("/businesses");
   }
 
   return (

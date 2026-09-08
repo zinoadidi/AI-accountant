@@ -13,27 +13,34 @@ datasource db {
 // back to native Prisma enums if desired.
 
 model User {
-  id                String       @id @default(cuid())
-  email             String       @unique
-  passwordHash      String
-  name              String
-  createdAt         DateTime     @default(now())
-  memberships       Membership[]
-  invitationsSent   Invitation[] @relation("InvitedBy")
-  documentsUploaded Document[]   @relation("UploadedBy")
+  id                  String       @id @default(cuid())
+  email               String       @unique
+  passwordHash        String
+  name                String
+  createdAt           DateTime     @default(now())
+  memberships         Membership[]
+  invitationsSent     Invitation[] @relation("InvitedBy")
+  documentsUploaded   Document[]   @relation("UploadedBy")
+  engagementsSent     Engagement[] @relation("EngagementInvitedBy")
+  engagementsAccepted Engagement[] @relation("EngagementAccountant")
 }
 
 model Business {
-  id           String       @id @default(cuid())
-  name         String
-  registryCode String? // Estonian Ariregister code
-  vatNumber    String?
-  country      String       @default("EE")
-  currency     String       @default("EUR")
-  createdAt    DateTime     @default(now())
-  memberships  Membership[]
-  invitations  Invitation[]
-  documents    Document[]
+  id            String         @id @default(cuid())
+  name          String
+  registryCode  String? // Estonian Ariregister code
+  vatNumber     String?
+  country       String         @default("EE")
+  currency      String         @default("EUR")
+  // Billing mode the owner has selected — scaffolding only, no payment
+  // processing wired up yet. PAY_PER_REPORT | PROFESSIONAL_FEE | SUBSCRIPTION
+  pricingMode   String?
+  createdAt     DateTime       @default(now())
+  memberships   Membership[]
+  invitations   Invitation[]
+  documents     Document[]
+  filingPeriods FilingPeriod[]
+  engagements   Engagement[]
 }
 
 model Membership {
@@ -63,14 +70,14 @@ model Invitation {
 }
 
 model Document {
-  id         String   @id @default(cuid())
-  business   Business @relation(fields: [businessId], references: [id])
-  businessId String
-  fileName   String
-  mimeType   String
-  sizeBytes  Int
-  type       String   @default("OTHER") // RECEIPT | BANK_STATEMENT | INVOICE | CONTRACT | OTHER
-  status     String   @default("UPLOADED") // UPLOADED | CATEGORIZED | REVIEWED
+  id                String   @id @default(cuid())
+  business          Business @relation(fields: [businessId], references: [id])
+  businessId        String
+  fileName          String
+  mimeType          String
+  sizeBytes         Int
+  type              String   @default("OTHER") // RECEIPT | BANK_STATEMENT | INVOICE | CONTRACT | OTHER
+  status            String   @default("UPLOADED") // UPLOADED | CATEGORIZED | REVIEWED
   // AI-extracted / suggested fields — always distinguished from human-confirmed ones
   suggestedCategory String?
   suggestedVendor   String?
@@ -82,4 +89,42 @@ model Document {
   uploadedBy        User     @relation("UploadedBy", fields: [uploadedById], references: [id])
   uploadedById      String
   createdAt         DateTime @default(now())
+}
+
+// A filing period is the scoping unit for a single statutory filing (a VAT
+// return for a month, an annual report for a year, etc). Bank reconciliation,
+// report drafting, and accountant review/sign-off are all organized around
+// one of these, not around the business as a whole or a single document.
+model FilingPeriod {
+  id          String       @id @default(cuid())
+  business    Business     @relation(fields: [businessId], references: [id])
+  businessId  String
+  label       String // e.g. "January 2026 VAT return"
+  type        String // VAT | ANNUAL | OTHER
+  periodStart DateTime
+  periodEnd   DateTime
+  status      String       @default("OPEN") // OPEN | IN_REVIEW | FILED
+  createdAt   DateTime     @default(now())
+  engagements Engagement[]
+}
+
+// Per-filing accountant access — distinct from the standing, business-wide
+// Membership role. An accountant can be granted access to review and sign
+// just one filing period (e.g. sourced through a future marketplace) without
+// becoming a permanent team member.
+model Engagement {
+  id             String       @id @default(cuid())
+  business       Business     @relation(fields: [businessId], references: [id])
+  businessId     String
+  filingPeriod   FilingPeriod @relation(fields: [filingPeriodId], references: [id])
+  filingPeriodId String
+  email          String
+  status         String       @default("PENDING") // PENDING | ACTIVE | COMPLETED | REVOKED
+  token          String       @unique
+  invitedBy      User         @relation("EngagementInvitedBy", fields: [invitedById], references: [id])
+  invitedById    String
+  accountant     User?        @relation("EngagementAccountant", fields: [accountantId], references: [id])
+  accountantId   String?
+  createdAt      DateTime     @default(now())
+  expiresAt      DateTime
 }
