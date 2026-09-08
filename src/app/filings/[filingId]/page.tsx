@@ -138,10 +138,17 @@ export default function FilingDetailPage() {
         · {filing.viaEngagement ? "engaged for this filing" : filing.accessRole}
       </p>
       <h1 className="mb-1 text-2xl font-semibold">{filing.label}</h1>
-      <p className="mb-8 text-sm text-slate-600">
+      <p className="mb-4 text-sm text-slate-600">
         {filing.type} · {new Date(filing.periodStart).toLocaleDateString()} –{" "}
         {new Date(filing.periodEnd).toLocaleDateString()} · Status: {filing.status}
       </p>
+
+      <Link
+        href={`/filings/${filing.id}/revenue`}
+        className="mb-8 inline-block rounded-md border border-slate-300 px-4 py-2 text-sm hover:bg-slate-100"
+      >
+        Revenue entries & missing invoices →
+      </Link>
 
       <section className="mb-8">
         <h2 className="mb-2 font-medium">Preview, download & file</h2>

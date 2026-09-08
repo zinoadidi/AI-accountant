@@ -24,3 +24,6 @@ export type EngagementStatus = (typeof ENGAGEMENT_STATUSES)[number];
 
 export const PRICING_MODES = ["PAY_PER_REPORT", "PROFESSIONAL_FEE", "SUBSCRIPTION"] as const;
 export type PricingMode = (typeof PRICING_MODES)[number];
+
+export const REVENUE_ENTRY_STATUSES = ["NEEDS_INVOICE", "NO_INVOICE_NEEDED", "INVOICE_GENERATED"] as const;
+export type RevenueEntryStatus = (typeof REVENUE_ENTRY_STATUSES)[number];

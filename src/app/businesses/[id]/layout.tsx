@@ -27,6 +27,7 @@ export default async function BusinessLayout({
     { href: `/businesses/${params.id}/team`, label: "Team" },
     { href: `/businesses/${params.id}/documents`, label: "Documents" },
     { href: `/businesses/${params.id}/filings`, label: "Filings" },
+    { href: `/businesses/${params.id}/templates`, label: "Templates" },
     { href: `/businesses/${params.id}/billing`, label: "Billing" },
   ];
 

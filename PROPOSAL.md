@@ -190,10 +190,26 @@ human-entered value silently.
 - **Phase 1:** bank connection (aggregator, LHV first) + transaction
   import + reconciliation against categorized documents; ledger view.
   Manual statement upload remains available throughout.
-- **Phase 2:** invoice generation from uploaded company templates for
-  unmatched revenue transactions; KMD (VAT return) draft generation;
-  first cut of the accountant marketplace (order a vetted accountant,
-  which creates the same membership/engagement invite-your-own does).
+- **Phase 2a (shipped, ahead of Phase 1):** missing-invoice generation.
+  A business uploads its own invoice design as HTML with
+  `{{placeholder}}` tokens (`InvoiceTemplate`); each candidate outgoing
+  invoice is a `RevenueEntry` scoped to a filing period, with
+  rectifiable customer details filled in either one at a time in the UI
+  or via CSV export → edit in a spreadsheet → re-upload (update-by-id or
+  create-new). Whether an entry needs an invoice at all is always an
+  explicit human decision with a stated reason — an AI heuristic
+  (`suggestNoInvoiceReason`) only *suggests* likely exceptions (refunds,
+  transfers between own accounts, bank interest/fees) for a human to
+  confirm; it never asserts a legal conclusion, since real Estonian
+  invoicing-requirement thresholds need a lawyer's sign-off, not a
+  keyword match. Built standalone (manual/CSV entry) since it doesn't
+  need live bank data to be useful — once Phase 1 ships, unmatched
+  revenue transactions will create these `RevenueEntry` rows
+  automatically instead of requiring manual/CSV entry.
+- **Phase 2b (not yet built):** KMD (VAT return) draft generation from
+  the reconciled ledger; first cut of the accountant marketplace (order
+  a vetted accountant, which creates the same membership/engagement
+  invite-your-own does).
 - **Phase 3:** accountant review workspace (diff view, confidence
   flags, comment threads) + Mobile-ID/Smart-ID signing via a signing
   middleware, with manual sign/submit kept as a fallback path.
@@ -208,12 +224,15 @@ human-entered value silently.
 
 ## 7. What's shipped
 
-Phase 0 and Phase 0.5 are both implemented: sign up, create or join a
-business, a multi-business switcher, team invitations by role, document
-upload with AI-assisted (and explicitly optional) category suggestions,
-filing periods with per-filing accountant engagements, disclaimer
-checkpoints instead of a mandatory review gate, pricing-mode selection,
-and the "Coming soon" pattern for automated EMTA submission and payment
-processing. Phase 1 onward (real bank sync, invoice generation, actual
-report drafting, e-signature, live EMTA filing) is not yet built — see
-the roadmap above.
+Phase 0, Phase 0.5, and Phase 2a are implemented: sign up, create or
+join a business, a multi-business switcher, team invitations by role,
+document upload with AI-assisted (and explicitly optional) category
+suggestions, filing periods with per-filing accountant engagements,
+disclaimer checkpoints instead of a mandatory review gate, pricing-mode
+selection, the "Coming soon" pattern for automated EMTA submission and
+payment processing, and missing-invoice generation (upload your own
+HTML invoice template, rectify customer details one-by-one or via CSV
+bulk import/export, generate the invoice, with a human — never the
+system — deciding when an entry doesn't need one). Phase 1 and 2b (real
+bank sync, actual KMD/report drafting, e-signature, live EMTA filing)
+are not yet built — see the roadmap above.

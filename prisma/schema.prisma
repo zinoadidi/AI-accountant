@@ -26,21 +26,23 @@ model User {
 }
 
 model Business {
-  id            String         @id @default(cuid())
-  name          String
-  registryCode  String? // Estonian Ariregister code
-  vatNumber     String?
-  country       String         @default("EE")
-  currency      String         @default("EUR")
+  id               String            @id @default(cuid())
+  name             String
+  registryCode     String? // Estonian Ariregister code
+  vatNumber        String?
+  country          String            @default("EE")
+  currency         String            @default("EUR")
   // Billing mode the owner has selected — scaffolding only, no payment
   // processing wired up yet. PAY_PER_REPORT | PROFESSIONAL_FEE | SUBSCRIPTION
-  pricingMode   String?
-  createdAt     DateTime       @default(now())
-  memberships   Membership[]
-  invitations   Invitation[]
-  documents     Document[]
-  filingPeriods FilingPeriod[]
-  engagements   Engagement[]
+  pricingMode      String?
+  createdAt        DateTime          @default(now())
+  memberships      Membership[]
+  invitations      Invitation[]
+  documents        Document[]
+  filingPeriods    FilingPeriod[]
+  engagements      Engagement[]
+  invoiceTemplates InvoiceTemplate[]
+  revenueEntries   RevenueEntry[]
 }
 
 model Membership {
@@ -96,16 +98,17 @@ model Document {
 // report drafting, and accountant review/sign-off are all organized around
 // one of these, not around the business as a whole or a single document.
 model FilingPeriod {
-  id          String       @id @default(cuid())
-  business    Business     @relation(fields: [businessId], references: [id])
-  businessId  String
-  label       String // e.g. "January 2026 VAT return"
-  type        String // VAT | ANNUAL | OTHER
-  periodStart DateTime
-  periodEnd   DateTime
-  status      String       @default("OPEN") // OPEN | IN_REVIEW | FILED
-  createdAt   DateTime     @default(now())
-  engagements Engagement[]
+  id             String         @id @default(cuid())
+  business       Business       @relation(fields: [businessId], references: [id])
+  businessId     String
+  label          String // e.g. "January 2026 VAT return"
+  type           String // VAT | ANNUAL | OTHER
+  periodStart    DateTime
+  periodEnd      DateTime
+  status         String         @default("OPEN") // OPEN | IN_REVIEW | FILED
+  createdAt      DateTime       @default(now())
+  engagements    Engagement[]
+  revenueEntries RevenueEntry[]
 }
 
 // Per-filing accountant access — distinct from the standing, business-wide
@@ -127,4 +130,56 @@ model Engagement {
   accountantId   String?
   createdAt      DateTime     @default(now())
   expiresAt      DateTime
+}
+
+// The business's own invoice design, uploaded once and reused. `html` holds
+// the raw markup with {{placeholder}} tokens (see src/lib/invoicing.ts for
+// the token list) that get substituted per generated invoice.
+model InvoiceTemplate {
+  id         String   @id @default(cuid())
+  business   Business @relation(fields: [businessId], references: [id])
+  businessId String
+  name       String
+  html       String
+  createdAt  DateTime @default(now())
+}
+
+// One candidate outgoing invoice, scoped to a filing period. In the absence
+// of live bank sync (phase 1, not yet built) these are entered manually or
+// via CSV bulk import; once that exists, unmatched revenue transactions
+// will create these automatically instead.
+//
+// Whether an entry needs an invoice at all is a human decision, not a
+// hardcoded legal rule — `suggestedNoInvoiceReason` is an AI-suggested,
+// non-binding hint (same "suggested vs. confirmed" pattern as Document),
+// and `noInvoiceReason` is only ever set by an explicit human action.
+model RevenueEntry {
+  id                  String       @id @default(cuid())
+  business            Business     @relation(fields: [businessId], references: [id])
+  businessId          String
+  filingPeriod        FilingPeriod @relation(fields: [filingPeriodId], references: [id])
+  filingPeriodId      String
+  transactionDate     DateTime
+  amount              Float
+  currency            String       @default("EUR")
+  description         String? // raw bank statement memo/reference
+  counterpartyNameRaw String? // payer name as it appears on the statement
+
+  status                   String  @default("NEEDS_INVOICE") // NEEDS_INVOICE | NO_INVOICE_NEEDED | INVOICE_GENERATED
+  suggestedNoInvoiceReason String? // AI-suggested hint only, never authoritative
+  noInvoiceReason          String? // set only by an explicit human decision
+
+  // Rectifiable customer details — filled in one at a time or via CSV bulk import
+  customerName         String?
+  customerRegistryCode String?
+  customerVatNumber    String?
+  customerAddress      String?
+  customerEmail        String?
+
+  invoiceTemplateId String?
+  invoiceNumber     String?
+  invoiceHtml       String?
+  generatedAt       DateTime?
+
+  createdAt DateTime @default(now())
 }
