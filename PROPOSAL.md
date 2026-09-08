@@ -63,60 +63,79 @@ pipeline is proven.
 | Open banking | PSD2 AISP access via Estonian banks (LHV, Swedbank, SEB, Luminor) or an aggregator (e.g. Salt Edge, Nordigen/GoCardless Bank Account Data) |
 | Data residency | GDPR applies; Estonia has no extra data-localization mandate for private SaaS, but audit-log integrity standards (KSI blockchain, as used by state registries) are a credibility differentiator worth offering later |
 
-## 4. Missing questions — and proposed defaults
+## 4. Confirmed decisions
 
-These need a decision-maker's sign-off, but each has a recommended
-default so the build isn't blocked:
+These were open questions in the first draft of this proposal; the
+decision-maker has now confirmed each one. Where a decision materially
+changes scope from the Phase 0 code already in this repo, that's called
+out explicitly — those changes are not yet implemented.
 
-1. **Who is legally the "filer" of record?** → *Default:* the client's
-   accountant, who must hold a valid Estonian accounting/tax
-   representation right; the platform is a tool they use, not itself a
-   tax intermediary — avoids the platform needing its own EMTA
-   e-service credentials per client. Confirm with an Estonian tax lawyer
-   before launch.
-2. **Bank connectivity: build direct PSD2 integrations per bank, or use
-   an aggregator?** → *Default:* start with an aggregator (Nordigen/GoCardless
-   Bank Account Data has strong Baltic coverage and a free tier) to reach
-   all major Estonian banks quickly; revisit direct integration only if
-   aggregator cost/reliability becomes a problem at scale.
-3. **Which LLM/AI approach for document extraction and categorization?**
-   → *Default:* a hybrid — deterministic OCR/parsing (e.g. structured
-   bank CSV/MT940/PSD2 JSON needs no OCR) plus an LLM (Claude) for
-   unstructured receipts/invoices and for categorization suggestions,
-   with per-tenant rule learning from accepted/corrected categorizations
-   layered on top so the LLM call frequency (and cost) drops over time.
-4. **E-signature integration: direct SK ID Solutions contract, or a
-   signing middleware (e.g. Dokobit, Allsign)?** → *Default:* start with
-   a signing middleware (Dokobit is Baltic-focused and has a
-   developer API) to avoid a direct SK certification process before
-   product-market fit is proven.
-5. **EMTA submission: does the product submit filings via API, or
-   produce a ready file/pre-filled form for the accountant to submit
-   manually in EMTA's portal?** → *Default (MVP):* generate the
-   correctly formatted filing package and let the accountant do the
-   final submit-click inside EMTA's own portal — removes the need for
-   X-tee membership/certification for launch. Automate the API
-   submission in phase 2 once volume and trust justify the
-   certification effort.
-6. **Pricing model?** → *Default:* per-business monthly subscription
-   tiered by transaction volume, plus a per-filing fee if the platform
-   also brokers the accountant relationship (marketplace model) rather
-   than the business bringing their own accountant.
-7. **Does the platform supply the accountant, or does the client bring
-   their own?** → *Default for MVP:* client brings their own accountant
-   (lower liability/regulatory surface); a "find an accountant"
-   marketplace is a natural phase-2 expansion once the review workflow
-   is proven.
-8. **Multi-entity / multi-currency support?** → *Default:* MVP is
-   single-entity, EUR-only, Estonian-resident companies; the data model
-   is built multi-currency-ready from day one to avoid a rewrite.
-9. **Liability and insurance** if AI mis-categorizes and an accountant
-   misses it → *Default:* every AI-suggested figure is visibly flagged
-   as "AI-suggested, unreviewed" until an accountant explicitly accepts
-   it; the platform's terms of service place statutory filing
-   responsibility on the signing accountant, consistent with how
-   existing accounting software (e.g. Merit Aktiva, e-Financials) is
-   positioned.
+1. **Who is legally the "filer" of record?** → **Confirmed:** whoever
+   signs is the legal representative. It doesn't matter where the
+   accountant comes from — a user invited (or matched) with the
+   `ACCOUNTANT` role reviews, signs, and that constitutes filing. Both
+   sourcing paths are in scope: the client invites their own accountant
+   (already supported by Phase 0), or orders a vetted one through a
+   platform marketplace (phase 2+). *Still worth a one-time check with
+   an Estonian tax lawyer that this holds up before launch.*
+2. **Accountant engagement model.** → **Confirmed — scope change:**
+   support **both** a standing team membership (the current
+   `Membership` model — ongoing access, any role) **and** a per-filing
+   / per-period scoped engagement (an accountant granted access to one
+   filing only, e.g. via the marketplace) from the start, not phased.
+   This needs a new `Engagement`-style concept alongside `Membership`
+   in the data model — not yet built.
+3. **Bank connectivity.** → **Confirmed:** use an open banking
+   aggregator (e.g. Nordigen/GoCardless) for LHV and other Estonian
+   banks rather than pursuing direct PSD2/AISP integration per bank —
+   avoids the licensing overhead of direct access. Manual statement
+   upload (already built) always remains available as a fallback,
+   independent of aggregator status.
+4. **AI approach.** → **Confirmed:** hybrid — deterministic parsing for
+   structured data plus an LLM for unstructured receipts/invoices and
+   categorization, with per-tenant rule learning from corrections. This
+   matches the seam already built in `src/lib/categorize.ts`.
+5. **E-signature integration.** → **Confirmed:** integrate a signing
+   middleware (e.g. Dokobit) as the primary path, but always keep a
+   manual fallback (accountant signs and submits outside the platform)
+   available in case the middleware integration needs more setup than
+   expected or is temporarily unavailable.
+6. **EMTA submission.** → **Confirmed:** ship the manual path first —
+   generate the correctly formatted filing package for the accountant
+   to submit inside EMTA's own portal. The automated API/X-tee
+   submission path is shown in the UI as a real, clickable option, but
+   behind a "Coming soon" / premium modal rather than hidden — this is
+   the general pattern to apply everywhere a feature is deferred:
+   ship the manual/streamlined version as the working default, and
+   surface the fuller-automation version as a visible, gated
+   coming-soon/premium entry point rather than omitting it.
+7. **Pricing model.** → **Confirmed — scope change:** offer all three
+   modes and let the customer pick: (a) pay-as-you-go per report/filing,
+   (b) an order-a-professional fee (the accountant marketplace path),
+   and (c) an all-inclusive subscription with tiers. Needs a pricing/plan
+   selection concept in the data model and billing layer — not yet built.
+8. **Multi-entity / multi-currency support.** → **Confirmed — scope
+   change:** support multi-entity from the start, not deferred to a
+   later phase — one user/team should be able to manage multiple
+   companies (a group structure, or an accountant serving several
+   clients). The current schema already scopes every record by
+   `businessId` and a `User` already has a `Membership[]`, so the model
+   mostly supports this already; what's missing is the UI (a
+   business-switcher) and confirming that memberships/engagements
+   compose correctly across entities.
+9. **Liability handling.** → **Confirmed:** the signing accountant
+   carries statutory responsibility, consistent with existing
+   accounting software. Explicitly **not** required: blocking, per-line
+   human confirmation of every AI-suggested figure before proceeding.
+   Instead, place clear disclaimers at strategic checkpoints — before
+   submit, before download, before preview — rather than gating the
+   workflow on confirming each item individually. **This changes the
+   already-built documents flow:** the current UI requires confirming
+   each document's AI-suggested category one at a time before it's
+   marked reviewed; per this decision that confirm step should become
+   optional/informational rather than a required gate, with the
+   liability disclaimer doing the actual legal work at the
+   submit/download/preview points instead.
 
 ## 5. Architecture (MVP)
 
@@ -144,25 +163,46 @@ human-entered value silently.
 
 ## 6. Phased roadmap
 
-- **Phase 0 (this repo, current commit):** auth, business creation,
-  team invitations with roles, document upload + AI-assisted
-  categorization stub. Foundation for everything else.
-- **Phase 1:** bank connection (aggregator) + transaction import +
-  reconciliation against categorized documents; ledger view.
+- **Phase 0 (shipped):** auth, business creation, team invitations
+  with roles, document upload + AI-assisted categorization stub.
+  Foundation for everything else.
+- **Phase 0.5 (next, given the confirmed decisions above):**
+  - Multi-entity: a business switcher, and confirming memberships
+    compose cleanly across multiple companies per user.
+  - Dual accountant engagement: add the per-filing/per-period scoped
+    `Engagement` alongside the existing standing `Membership`.
+  - Loosen the document review flow from a required per-item confirm
+    gate to optional/informational, and add the disclaimer checkpoints
+    (before submit/download/preview) that carry the actual liability
+    framing.
+  - Pricing/plan selection scaffolding (per-report, per-professional-fee,
+    subscription tiers) even before real billing is wired up.
+- **Phase 1:** bank connection (aggregator, LHV first) + transaction
+  import + reconciliation against categorized documents; ledger view.
+  Manual statement upload remains available throughout.
 - **Phase 2:** invoice generation from uploaded company templates for
-  unmatched revenue transactions; KMD (VAT return) draft generation.
+  unmatched revenue transactions; KMD (VAT return) draft generation;
+  first cut of the accountant marketplace (order a vetted accountant,
+  which creates the same membership/engagement invite-your-own does).
 - **Phase 3:** accountant review workspace (diff view, confidence
   flags, comment threads) + Mobile-ID/Smart-ID signing via a signing
-  middleware.
+  middleware, with manual sign/submit kept as a fallback path.
 - **Phase 4:** EMTA filing package export → accountant-assisted manual
-  submission; annual report (Ariregister/XBRL) support.
-- **Phase 5:** direct EMTA/X-tee API submission (pending
-  certification); expand beyond Estonia (Latvia/Lithuania share similar
-  e-invoicing/Peppol infrastructure and are natural next markets).
+  submission is the working path; the direct API/X-tee submission
+  appears in the UI as a "Coming soon" / premium entry point rather
+  than being hidden. Annual report (Ariregister/XBRL) support.
+- **Phase 5:** direct EMTA/X-tee API submission goes live (pending
+  certification), replacing its coming-soon modal; expand beyond
+  Estonia (Latvia/Lithuania share similar e-invoicing/Peppol
+  infrastructure and are natural next markets).
 
-## 7. What this commit ships
+## 7. What's shipped vs. what changed today
 
-A working vertical slice of Phase 0: sign up, create or join a business,
-invite team members by role, upload documents, and get an AI-assisted
-category suggestion a human can accept or correct — the substrate every
-later phase (bank sync, invoicing, filing, signing) plugs into.
+The Phase 0 code (sign up, create or join a business, invite team
+members by role, upload documents with AI-assisted category
+suggestions) is unchanged and working. This revision only resolves the
+open questions in Section 4 — several of them (multi-entity, dual
+accountant engagement, flexible pricing, the looser review-gate/
+disclaimer approach) change scope beyond what Phase 0 currently
+implements; see Phase 0.5 in the roadmap for what that implies to
+build next.
