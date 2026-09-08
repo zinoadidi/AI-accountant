@@ -1,0 +1,85 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// NOTE: SQLite has no native enum type, so role/status/type fields below are
+// plain strings constrained by the TypeScript union types in src/lib/types.ts.
+// Switching `provider` to "postgresql" for production allows converting these
+// back to native Prisma enums if desired.
+
+model User {
+  id                String       @id @default(cuid())
+  email             String       @unique
+  passwordHash      String
+  name              String
+  createdAt         DateTime     @default(now())
+  memberships       Membership[]
+  invitationsSent   Invitation[] @relation("InvitedBy")
+  documentsUploaded Document[]   @relation("UploadedBy")
+}
+
+model Business {
+  id           String       @id @default(cuid())
+  name         String
+  registryCode String? // Estonian Ariregister code
+  vatNumber    String?
+  country      String       @default("EE")
+  currency     String       @default("EUR")
+  createdAt    DateTime     @default(now())
+  memberships  Membership[]
+  invitations  Invitation[]
+  documents    Document[]
+}
+
+model Membership {
+  id         String   @id @default(cuid())
+  role       String // OWNER | ACCOUNTANT | BOOKKEEPER | EMPLOYEE | VIEWER
+  user       User     @relation(fields: [userId], references: [id])
+  userId     String
+  business   Business @relation(fields: [businessId], references: [id])
+  businessId String
+  createdAt  DateTime @default(now())
+
+  @@unique([userId, businessId])
+}
+
+model Invitation {
+  id          String   @id @default(cuid())
+  email       String
+  role        String // ACCOUNTANT | BOOKKEEPER | EMPLOYEE | VIEWER
+  status      String   @default("PENDING") // PENDING | ACCEPTED | REVOKED
+  token       String   @unique
+  business    Business @relation(fields: [businessId], references: [id])
+  businessId  String
+  invitedBy   User     @relation("InvitedBy", fields: [invitedById], references: [id])
+  invitedById String
+  createdAt   DateTime @default(now())
+  expiresAt   DateTime
+}
+
+model Document {
+  id         String   @id @default(cuid())
+  business   Business @relation(fields: [businessId], references: [id])
+  businessId String
+  fileName   String
+  mimeType   String
+  sizeBytes  Int
+  type       String   @default("OTHER") // RECEIPT | BANK_STATEMENT | INVOICE | CONTRACT | OTHER
+  status     String   @default("UPLOADED") // UPLOADED | CATEGORIZED | REVIEWED
+  // AI-extracted / suggested fields — always distinguished from human-confirmed ones
+  suggestedCategory String?
+  suggestedVendor   String?
+  suggestedAmount   Float?
+  suggestedCurrency String?
+  suggestedVatRate  Float?
+  aiConfidence      Float?
+  confirmedCategory String?
+  uploadedBy        User     @relation("UploadedBy", fields: [uploadedById], references: [id])
+  uploadedById      String
+  createdAt         DateTime @default(now())
+}
