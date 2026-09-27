@@ -13,6 +13,32 @@ const schema = z.object({
 
 const DAY_MS = 86_400_000;
 
+// Bounded parallelism for independent calls: results stay in input order,
+// at most `limit` in flight.
+async function mapLimit<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T, index: number) => Promise<R>
+): Promise<R[]> {
+  const out: R[] = new Array(items.length);
+  let next = 0;
+  const workers = Array.from(
+    { length: Math.min(Math.max(limit, 1), items.length) },
+    async () => {
+      while (next < items.length) {
+        const i = next++;
+        out[i] = await fn(items[i], i);
+      }
+    }
+  );
+  await Promise.all(workers);
+  return out;
+}
+
+// Per-credit AI hints run concurrently; the Meta relay caps each upstream
+// call at ~45s.
+const AI_CONCURRENCY = 5;
+
 function dateDiffDays(a: string, b: string): number {
   return Math.abs(Date.parse(a.slice(0, 10)) - Date.parse(b.slice(0, 10))) / DAY_MS;
 }
@@ -76,6 +102,9 @@ export async function POST(
   const unmatchedDebits: string[] = [];
   const revenueByTx = new Map<string, WithId<RevenueDoc>>();
 
+  // Phase 1 (in tx order, unchanged semantics): match credits against
+  // existing revenue, collect the ones needing an AI hint + creation.
+  const pending: { tx: (typeof statement.transactions)[number] }[] = [];
   for (const tx of statement.transactions) {
     if (tx.direction === "C") {
       const hit =
@@ -91,31 +120,42 @@ export async function POST(
         matched.push({ txId: tx.id, revenueId: hit.id });
         revenueByTx.set(tx.id, hit);
       } else {
-        // Non-binding AI hint only; noInvoiceReason stays null for a human.
-        const { reason } = await suggestNoInvoiceWithAI({
-          description: tx.description,
-          counterpartyNameRaw: tx.counterpartyName,
-          amount: tx.amount,
-        });
-        const entry = await revenues.create({
-          businessId: params.id,
-          filingPeriodId,
-          transactionDate: toIsoDate(tx.date),
-          amount: tx.amount,
-          currency: tx.currency || "EUR",
-          description: tx.description,
-          counterpartyNameRaw: tx.counterpartyName,
-          suggestedNoInvoiceReason: reason,
-          statementTxId: tx.id,
-        });
-        usedRevenueIds.add(entry.id);
-        created.push(entry.id);
-        revenueByTx.set(tx.id, entry);
+        pending.push({ tx });
       }
     } else {
       const covered = docs.some((d) => debitPlausible(tx, d));
       if (!covered) unmatchedDebits.push(tx.id);
     }
+  }
+
+  // Phase 2: independent AI hints, concurrently (results in tx order).
+  // Non-binding hints only; noInvoiceReason stays null for a human.
+  const hints = await mapLimit(pending, AI_CONCURRENCY, ({ tx }) =>
+    suggestNoInvoiceWithAI({
+      description: tx.description,
+      counterpartyNameRaw: tx.counterpartyName,
+      amount: tx.amount,
+    })
+  );
+
+  // Phase 3: create revenue entries sequentially in tx order.
+  for (let i = 0; i < pending.length; i++) {
+    const { tx } = pending[i];
+    const { reason } = hints[i];
+    const entry = await revenues.create({
+      businessId: params.id,
+      filingPeriodId,
+      transactionDate: toIsoDate(tx.date),
+      amount: tx.amount,
+      currency: tx.currency || "EUR",
+      description: tx.description,
+      counterpartyNameRaw: tx.counterpartyName,
+      suggestedNoInvoiceReason: reason,
+      statementTxId: tx.id,
+    });
+    usedRevenueIds.add(entry.id);
+    created.push(entry.id);
+    revenueByTx.set(tx.id, entry);
   }
 
   await statements.attachFiling(statement.id, filingPeriodId);
