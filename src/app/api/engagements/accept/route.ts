@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { z } from "zod";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { engagements, users } from "@/lib/db";
 
 const schema = z.object({ token: z.string() });
 
@@ -16,13 +16,13 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const engagement = await prisma.engagement.findUnique({ where: { token: parsed.data.token } });
-  if (!engagement || engagement.status !== "PENDING" || engagement.expiresAt < new Date()) {
+  const engagement = await engagements.findByToken(parsed.data.token);
+  if (!engagement || engagement.status !== "PENDING" || new Date(engagement.expiresAt) < new Date()) {
     return NextResponse.json({ error: "Engagement is invalid or expired" }, { status: 410 });
   }
 
   const userId = (session.user as { id: string }).id;
-  const user = await prisma.user.findUnique({ where: { id: userId } });
+  const user = await users.get(userId);
   if (user?.email.toLowerCase() !== engagement.email.toLowerCase()) {
     return NextResponse.json(
       { error: "This engagement was sent to a different email address" },
@@ -30,10 +30,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const updated = await prisma.engagement.update({
-    where: { id: engagement.id },
-    data: { status: "ACTIVE", accountantId: userId },
-  });
+  const updated = await engagements.accept(engagement.id, userId);
 
-  return NextResponse.json({ businessId: updated.businessId, filingPeriodId: updated.filingPeriodId });
+  return NextResponse.json({ businessId: updated?.businessId, filingPeriodId: updated?.filingPeriodId });
 }

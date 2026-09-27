@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { z } from "zod";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { revenues, updateDoc } from "@/lib/db";
 import { getFilingAccess, canManageFilings } from "@/lib/permissions";
 import { REVENUE_ENTRY_STATUSES } from "@/lib/types";
 
@@ -31,10 +31,10 @@ export async function PATCH(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const entry = await prisma.revenueEntry.findFirst({
-    where: { id: params.entryId, filingPeriodId: params.filingId, businessId: params.id },
-  });
-  if (!entry) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const entry = await revenues.get(params.entryId);
+  if (!entry || entry.filingPeriodId !== params.filingId || entry.businessId !== params.id) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
 
   const body = await request.json();
   const parsed = schema.safeParse(body);
@@ -56,10 +56,7 @@ export async function PATCH(
     data.noInvoiceReason = null;
   }
 
-  const updated = await prisma.revenueEntry.update({
-    where: { id: params.entryId },
-    data,
-  });
+  const updated = await updateDoc("revenue", params.entryId, data);
 
   return NextResponse.json(updated);
 }

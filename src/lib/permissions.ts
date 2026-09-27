@@ -1,18 +1,15 @@
-import { prisma } from "@/lib/prisma";
+import { memberships, engagements } from "@/lib/db";
 import type { Role } from "@/lib/types";
 
 export async function getMembership(userId: string, businessId: string) {
-  return prisma.membership.findUnique({
-    where: { userId_businessId: { userId, businessId } },
-  });
+  return memberships.get(userId, businessId);
 }
 
 const MANAGE_TEAM_ROLES: Role[] = ["OWNER"];
 const UPLOAD_DOCUMENT_ROLES: Role[] = ["OWNER", "ACCOUNTANT", "BOOKKEEPER", "EMPLOYEE"];
 const MANAGE_FILINGS_ROLES: Role[] = ["OWNER", "ACCOUNTANT", "BOOKKEEPER"];
 
-// `role` comes from the Membership.role column, which is a plain string in
-// SQLite (no native enum support) but always one of the Role values.
+// `role` is a plain string in the store but always one of the Role values.
 export function canManageTeam(role: string) {
   return (MANAGE_TEAM_ROLES as string[]).includes(role);
 }
@@ -43,9 +40,7 @@ export async function getFilingAccess(
   const membership = await getMembership(userId, businessId);
   if (membership) return { role: membership.role, viaEngagement: false };
 
-  const engagement = await prisma.engagement.findFirst({
-    where: { filingPeriodId, businessId, accountantId: userId, status: "ACTIVE" },
-  });
+  const engagement = await engagements.activeForFiling(filingPeriodId, businessId, userId);
   if (engagement) return { role: "ACCOUNTANT", viaEngagement: true };
 
   return null;

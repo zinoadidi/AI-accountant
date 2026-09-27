@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { businesses } from "@/lib/db";
 import { getMembership } from "@/lib/permissions";
 
 export default async function BusinessLayout({
@@ -19,13 +19,14 @@ export default async function BusinessLayout({
   const membership = await getMembership(userId, params.id);
   if (!membership) redirect("/businesses");
 
-  const business = await prisma.business.findUnique({ where: { id: params.id } });
+  const business = await businesses.get(params.id);
   if (!business) redirect("/businesses");
 
   const navItems = [
     { href: `/businesses/${params.id}`, label: "Dashboard" },
     { href: `/businesses/${params.id}/team`, label: "Team" },
     { href: `/businesses/${params.id}/documents`, label: "Documents" },
+    { href: `/businesses/${params.id}/statements`, label: "Statements" },
     { href: `/businesses/${params.id}/filings`, label: "Filings" },
     { href: `/businesses/${params.id}/templates`, label: "Templates" },
     { href: `/businesses/${params.id}/billing`, label: "Billing" },
@@ -34,7 +35,7 @@ export default async function BusinessLayout({
   return (
     <div>
       <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-3">
+        <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-2 px-4 py-3">
           <div className="flex items-center gap-3">
             <Link href="/businesses" className="text-sm text-slate-500 hover:underline">
               ← Switch business
@@ -44,7 +45,7 @@ export default async function BusinessLayout({
               {membership.role}
             </span>
           </div>
-          <nav className="flex gap-4 text-sm">
+          <nav className="flex flex-wrap gap-4 text-sm">
             {navItems.map((item) => (
               <Link key={item.href} href={item.href} className="text-slate-600 hover:text-slate-900">
                 {item.label}

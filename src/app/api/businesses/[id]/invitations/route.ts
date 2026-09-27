@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { randomBytes } from "crypto";
 import { z } from "zod";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { invitations, memberships, users } from "@/lib/db";
 import { getMembership, canManageTeam } from "@/lib/permissions";
 
 const schema = z.object({
@@ -19,15 +18,18 @@ export async function GET(request: Request, { params }: { params: { id: string }
   const membership = await getMembership(userId, params.id);
   if (!membership) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const [members, invitations] = await Promise.all([
-    prisma.membership.findMany({
-      where: { businessId: params.id },
-      include: { user: { select: { id: true, name: true, email: true } } },
-    }),
-    prisma.invitation.findMany({ where: { businessId: params.id, status: "PENDING" } }),
+  const [memberDocs, inviteDocs] = await Promise.all([
+    memberships.byBusiness(params.id),
+    invitations.byBusiness(params.id),
   ]);
+  const members = await Promise.all(
+    memberDocs.map(async (m) => {
+      const u = await users.get(m.userId);
+      return { ...m, user: u ? { id: u.id, name: u.name, email: u.email } : null };
+    })
+  );
 
-  return NextResponse.json({ members, invitations });
+  return NextResponse.json({ members, invitations: inviteDocs.filter((i) => i.status === "PENDING") });
 }
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
@@ -46,15 +48,11 @@ export async function POST(request: Request, { params }: { params: { id: string 
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const invitation = await prisma.invitation.create({
-    data: {
-      email: parsed.data.email.toLowerCase(),
-      role: parsed.data.role,
-      token: randomBytes(24).toString("hex"),
-      businessId: params.id,
-      invitedById: userId,
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-    },
+  const invitation = await invitations.create({
+    email: parsed.data.email,
+    role: parsed.data.role,
+    businessId: params.id,
+    invitedById: userId,
   });
 
   // NOTE: sending the invite email is out of scope for this MVP slice;

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { z } from "zod";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { revenues, templates, businesses, updateDoc } from "@/lib/db";
 import { getFilingAccess, canManageFilings } from "@/lib/permissions";
 import { renderInvoiceTemplate, generateInvoiceNumber } from "@/lib/invoicing";
 
@@ -28,15 +28,15 @@ export async function POST(
   }
 
   const [entry, template, business] = await Promise.all([
-    prisma.revenueEntry.findFirst({
-      where: { id: params.entryId, filingPeriodId: params.filingId, businessId: params.id },
-    }),
-    prisma.invoiceTemplate.findFirst({
-      where: { id: parsed.data.templateId, businessId: params.id },
-    }),
-    prisma.business.findUnique({ where: { id: params.id } }),
+    revenues.get(params.entryId),
+    templates.get(parsed.data.templateId),
+    businesses.get(params.id),
   ]);
-  if (!entry || !template || !business) {
+  if (
+    !entry || entry.filingPeriodId !== params.filingId || entry.businessId !== params.id ||
+    !template || template.businessId !== params.id ||
+    !business
+  ) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
   if (!entry.customerName) {
@@ -61,18 +61,15 @@ export async function POST(
     description: entry.description ?? "",
     amount: entry.amount.toFixed(2),
     currency: entry.currency,
-    transactionDate: entry.transactionDate.toISOString().slice(0, 10),
+    transactionDate: entry.transactionDate.slice(0, 10),
   });
 
-  const updated = await prisma.revenueEntry.update({
-    where: { id: entry.id },
-    data: {
-      status: "INVOICE_GENERATED",
-      invoiceTemplateId: template.id,
-      invoiceNumber,
-      invoiceHtml,
-      generatedAt: new Date(),
-    },
+  const updated = await updateDoc("revenue", entry.id, {
+    status: "INVOICE_GENERATED",
+    invoiceTemplateId: template.id,
+    invoiceNumber,
+    invoiceHtml,
+    generatedAt: new Date().toISOString(),
   });
 
   return NextResponse.json(updated);

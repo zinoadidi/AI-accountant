@@ -2,7 +2,9 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { z } from "zod";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { businesses, memberships } from "@/lib/db";
+import { DEFAULT_INVOICE_TEMPLATE_NAME, DEFAULT_INVOICE_TEMPLATE_HTML } from "@/lib/default-template";
+import { templates } from "@/lib/db";
 
 const schema = z.object({
   name: z.string().min(1),
@@ -15,14 +17,15 @@ export async function GET() {
   if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const userId = (session.user as { id: string }).id;
-  const memberships = await prisma.membership.findMany({
-    where: { userId },
-    include: { business: true },
-  });
-
-  return NextResponse.json(
-    memberships.map((m) => ({ ...m.business, role: m.role }))
+  const list = await businesses.forUser(userId);
+  const withRoles = await Promise.all(
+    list.map(async (b) => {
+      const m = await memberships.get(userId, b.id);
+      return { ...b, role: m?.role ?? null };
+    })
   );
+
+  return NextResponse.json(withRoles);
 }
 
 export async function POST(request: Request) {
@@ -36,13 +39,12 @@ export async function POST(request: Request) {
   }
 
   const userId = (session.user as { id: string }).id;
-  const business = await prisma.business.create({
-    data: {
-      ...parsed.data,
-      country: "EE",
-      memberships: { create: { userId, role: "OWNER" } },
-    },
-  });
+  const business = await businesses.create({ ...parsed.data, country: "EE" });
+  await memberships.create(userId, business.id, "OWNER");
+  // Every business starts with the company invoice template (placeholder
+  // until the real company template is provided) so missing-invoice
+  // generation works immediately.
+  await templates.create(business.id, DEFAULT_INVOICE_TEMPLATE_NAME, DEFAULT_INVOICE_TEMPLATE_HTML);
 
   return NextResponse.json(business);
 }

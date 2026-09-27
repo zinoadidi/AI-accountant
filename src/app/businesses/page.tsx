@@ -2,18 +2,17 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { businesses, memberships } from "@/lib/db";
 
 export default async function BusinessesPage() {
   const session = await getServerSession(authOptions);
   if (!session?.user) redirect("/login");
 
   const userId = (session.user as { id: string }).id;
-  const memberships = await prisma.membership.findMany({
-    where: { userId },
-    include: { business: true },
-    orderBy: { createdAt: "asc" },
-  });
+  const list = await businesses.forUser(userId);
+  const withRoles = await Promise.all(
+    list.map(async (b) => ({ ...b, role: (await memberships.get(userId, b.id))?.role ?? null }))
+  );
 
   return (
     <main className="mx-auto max-w-2xl px-4 py-16">
@@ -27,7 +26,7 @@ export default async function BusinessesPage() {
         </Link>
       </div>
 
-      {memberships.length === 0 ? (
+      {withRoles.length === 0 ? (
         <p className="text-sm text-slate-600">
           You&apos;re not part of any business yet.{" "}
           <Link href="/businesses/new" className="underline">
@@ -37,17 +36,17 @@ export default async function BusinessesPage() {
         </p>
       ) : (
         <ul className="divide-y divide-slate-200 rounded-md border border-slate-200">
-          {memberships.map((m) => (
-            <li key={m.id}>
+          {withRoles.map((b) => (
+            <li key={b.id}>
               <Link
-                href={`/businesses/${m.businessId}`}
+                href={`/businesses/${b.id}`}
                 className="flex items-center justify-between px-4 py-3 hover:bg-slate-100"
               >
                 <div>
-                  <p className="font-medium">{m.business.name}</p>
-                  <p className="text-xs text-slate-500">{m.business.country}</p>
+                  <p className="font-medium">{b.name}</p>
+                  <p className="text-xs text-slate-500">{b.country}</p>
                 </div>
-                <span className="text-sm text-slate-500">{m.role}</span>
+                <span className="text-sm text-slate-500">{b.role}</span>
               </Link>
             </li>
           ))}

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { z } from "zod";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { businesses } from "@/lib/db";
 import { getMembership, canManageTeam } from "@/lib/permissions";
 import { PRICING_MODES } from "@/lib/types";
 
@@ -26,10 +26,8 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const business = await prisma.business.update({
-    where: { id: params.id },
-    data: { pricingMode: parsed.data.pricingMode },
-  });
+  const business = await businesses.setPricing(params.id, parsed.data.pricingMode);
+  if (!business) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   return NextResponse.json(business);
 }

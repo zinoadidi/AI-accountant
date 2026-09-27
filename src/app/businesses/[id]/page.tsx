@@ -2,7 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { businesses, documents, filings, statements } from "@/lib/db";
 import { getMembership } from "@/lib/permissions";
 
 export default async function BusinessDashboard({ params }: { params: { id: string } }) {
@@ -13,12 +13,13 @@ export default async function BusinessDashboard({ params }: { params: { id: stri
   const membership = await getMembership(userId, params.id);
   if (!membership) redirect("/businesses");
 
-  const business = await prisma.business.findUnique({ where: { id: params.id } });
+  const business = await businesses.get(params.id);
   if (!business) redirect("/businesses");
 
-  const [documentCount, filingCount] = await Promise.all([
-    prisma.document.count({ where: { businessId: params.id } }),
-    prisma.filingPeriod.count({ where: { businessId: params.id } }),
+  const [docs, filingPeriods, statementDocs] = await Promise.all([
+    documents.byBusiness(params.id),
+    filings.byBusiness(params.id),
+    statements.byBusiness(params.id),
   ]);
 
   return (
@@ -38,14 +39,23 @@ export default async function BusinessDashboard({ params }: { params: { id: stri
           className="rounded-lg border border-slate-200 p-4 hover:bg-slate-100"
         >
           <h2 className="font-medium">Documents</h2>
-          <p className="text-sm text-slate-600">{documentCount} uploaded so far</p>
+          <p className="text-sm text-slate-600">{docs.length} uploaded so far</p>
+        </Link>
+        <Link
+          href={`/businesses/${business.id}/statements`}
+          className="rounded-lg border border-slate-200 p-4 hover:bg-slate-100"
+        >
+          <h2 className="font-medium">Statements</h2>
+          <p className="text-sm text-slate-600">
+            {statementDocs.length} imported — reconcile against invoices
+          </p>
         </Link>
         <Link
           href={`/businesses/${business.id}/filings`}
           className="rounded-lg border border-slate-200 p-4 hover:bg-slate-100"
         >
           <h2 className="font-medium">Filings</h2>
-          <p className="text-sm text-slate-600">{filingCount} filing period(s)</p>
+          <p className="text-sm text-slate-600">{filingPeriods.length} filing period(s)</p>
         </Link>
         <Link
           href={`/businesses/${business.id}/billing`}
@@ -56,12 +66,6 @@ export default async function BusinessDashboard({ params }: { params: { id: stri
             {business.pricingMode ? `Plan: ${business.pricingMode.replace(/_/g, " ")}` : "No plan selected yet"}
           </p>
         </Link>
-      </div>
-
-      <div className="mt-8 rounded-lg border border-dashed border-slate-300 p-4 text-sm text-slate-600">
-        Bank statement analysis and invoice generation become available once
-        bank sync and the invoice template connector ship — see{" "}
-        <code>PROPOSAL.md</code> for the roadmap.
       </div>
     </main>
   );

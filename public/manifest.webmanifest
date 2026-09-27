@@ -1,0 +1,18 @@
+{
+  "name": "AI Accountant",
+  "short_name": "AI Accountant",
+  "description": "AI-assisted bookkeeping and tax filing, starting with Estonia.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f8fafc",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

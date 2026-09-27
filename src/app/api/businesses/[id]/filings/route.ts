@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { z } from "zod";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { filings } from "@/lib/db";
 import { getMembership, canManageFilings } from "@/lib/permissions";
 import { FILING_PERIOD_TYPES } from "@/lib/types";
 
@@ -21,10 +21,8 @@ export async function GET(request: Request, { params }: { params: { id: string }
   const membership = await getMembership(userId, params.id);
   if (!membership) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const filingPeriods = await prisma.filingPeriod.findMany({
-    where: { businessId: params.id },
-    orderBy: { periodStart: "desc" },
-  });
+  const filingPeriods = await filings.byBusiness(params.id);
+  filingPeriods.sort((a, b) => b.periodStart.localeCompare(a.periodStart));
 
   return NextResponse.json(filingPeriods);
 }
@@ -45,15 +43,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const filingPeriod = await prisma.filingPeriod.create({
-    data: {
-      businessId: params.id,
-      label: parsed.data.label,
-      type: parsed.data.type,
-      periodStart: new Date(parsed.data.periodStart),
-      periodEnd: new Date(parsed.data.periodEnd),
-    },
-  });
+  const filingPeriod = await filings.create({ businessId: params.id, ...parsed.data });
 
   return NextResponse.json(filingPeriod);
 }

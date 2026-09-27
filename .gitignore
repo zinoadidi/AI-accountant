@@ -7,3 +7,6 @@ node_modules
 .uploads
 next-env.d.ts
 tsconfig.tsbuildinfo
+
+# Real company financials used for local testing only — never commit (PII)
+example_company_data_zinospot/

@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { randomBytes } from "crypto";
 import { z } from "zod";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { filings, engagements } from "@/lib/db";
 import { getMembership, canManageTeam } from "@/lib/permissions";
 
 const schema = z.object({ email: z.string().email() });
@@ -23,9 +22,7 @@ export async function POST(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const filingPeriod = await prisma.filingPeriod.findFirst({
-    where: { id: params.filingId, businessId: params.id },
-  });
+  const filingPeriod = await filings.getBusinessScoped(params.filingId, params.id);
   if (!filingPeriod) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const body = await request.json();
@@ -34,15 +31,11 @@ export async function POST(
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const engagement = await prisma.engagement.create({
-    data: {
-      businessId: params.id,
-      filingPeriodId: params.filingId,
-      email: parsed.data.email.toLowerCase(),
-      token: randomBytes(24).toString("hex"),
-      invitedById: userId,
-      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-    },
+  const engagement = await engagements.create({
+    businessId: params.id,
+    filingPeriodId: params.filingId,
+    email: parsed.data.email,
+    invitedById: userId,
   });
 
   // NOTE: as with team invitations, sending the actual email is out of scope

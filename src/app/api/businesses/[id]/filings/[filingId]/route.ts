@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { z } from "zod";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { filings, businesses, users, engagements } from "@/lib/db";
 import { getFilingAccess, canManageFilings } from "@/lib/permissions";
 import { FILING_PERIOD_STATUSES } from "@/lib/types";
 
@@ -19,18 +19,28 @@ export async function GET(
   const access = await getFilingAccess(userId, params.id, params.filingId);
   if (!access) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 
-  const filingPeriod = await prisma.filingPeriod.findFirst({
-    where: { id: params.filingId, businessId: params.id },
-    include: {
-      business: { select: { id: true, name: true } },
-      engagements: {
-        include: { accountant: { select: { id: true, name: true, email: true } } },
-      },
-    },
-  });
+  const filingPeriod = await filings.getBusinessScoped(params.filingId, params.id);
   if (!filingPeriod) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  return NextResponse.json({ ...filingPeriod, accessRole: access.role, viaEngagement: access.viaEngagement });
+  const business = await businesses.get(filingPeriod.businessId);
+  const engList = await engagements.forFiling(filingPeriod.id);
+  const engagementViews = await Promise.all(
+    engList.map(async (e) => {
+      const accountant = e.accountantId ? await users.get(e.accountantId) : null;
+      return {
+        ...e,
+        accountant: accountant ? { id: accountant.id, name: accountant.name, email: accountant.email } : null,
+      };
+    })
+  );
+
+  return NextResponse.json({
+    ...filingPeriod,
+    business: business ? { id: business.id, name: business.name } : null,
+    engagements: engagementViews,
+    accessRole: access.role,
+    viaEngagement: access.viaEngagement,
+  });
 }
 
 export async function PATCH(
@@ -52,10 +62,10 @@ export async function PATCH(
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const filingPeriod = await prisma.filingPeriod.update({
-    where: { id: params.filingId },
-    data: { status: parsed.data.status },
-  });
+  const filingPeriod = await filings.setStatus(params.filingId, parsed.data.status);
+  if (!filingPeriod || filingPeriod.businessId !== params.id) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
 
   return NextResponse.json(filingPeriod);
 }

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { z } from "zod";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { documents } from "@/lib/db";
 import { getMembership, canUploadDocuments } from "@/lib/permissions";
 
 const schema = z.object({ category: z.string().min(1) });
@@ -26,10 +26,12 @@ export async function POST(
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const document = await prisma.document.update({
-    where: { id: params.documentId },
-    data: { confirmedCategory: parsed.data.category, status: "REVIEWED" },
-  });
+  const existing = await documents.get(params.documentId);
+  if (!existing || existing.businessId !== params.id) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  const document = await documents.confirm(params.documentId, parsed.data.category);
 
   return NextResponse.json(document);
 }

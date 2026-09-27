@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { revenues, updateDoc } from "@/lib/db";
 import { getFilingAccess, canManageFilings } from "@/lib/permissions";
 import { parseCsvRecords } from "@/lib/csv";
 import { REVENUE_ENTRY_STATUSES } from "@/lib/types";
-import { suggestNoInvoiceReason } from "@/lib/invoicing";
+import { suggestNoInvoiceWithAI } from "@/lib/ai";
 
 // Bulk rectification: download the CSV from the export endpoint, fill in
 // customer details (or amend anything else) in a spreadsheet, and re-upload
@@ -33,11 +33,10 @@ export async function POST(
   const text = await file.text();
   const records = parseCsvRecords(text);
 
-  const existingEntries = await prisma.revenueEntry.findMany({
-    where: { filingPeriodId: params.filingId, businessId: params.id },
-    select: { id: true },
-  });
-  const existingIds = new Set(existingEntries.map((e) => e.id));
+  const existingEntries = await revenues.forFiling(params.filingId);
+  const existingIds = new Set(
+    existingEntries.filter((e) => e.businessId === params.id).map((e) => e.id)
+  );
 
   let created = 0;
   let updated = 0;
@@ -70,13 +69,10 @@ export async function POST(
         errors.push({ row: i + 2, message: "noInvoiceReason is required to mark NO_INVOICE_NEEDED" });
         continue;
       }
-      await prisma.revenueEntry.update({
-        where: { id },
-        data: {
-          ...customerFields,
-          ...(status ? { status } : {}),
-          ...(row.noInvoiceReason ? { noInvoiceReason: row.noInvoiceReason } : {}),
-        },
+      await updateDoc("revenue", id, {
+        ...customerFields,
+        ...(status ? { status } : {}),
+        ...(row.noInvoiceReason ? { noInvoiceReason: row.noInvoiceReason } : {}),
       });
       updated++;
     } else {
@@ -86,15 +82,26 @@ export async function POST(
         errors.push({ row: i + 2, message: "New rows need a valid transactionDate and amount" });
         continue;
       }
-      await prisma.revenueEntry.create({
-        data: {
-          businessId: params.id,
-          filingPeriodId: params.filingId,
-          transactionDate,
-          amount,
-          currency: row.currency || "EUR",
-          ...customerFields,
-          suggestedNoInvoiceReason: suggestNoInvoiceReason(customerFields),
+      const { reason } = await suggestNoInvoiceWithAI({
+        description: customerFields.description,
+        counterpartyNameRaw: customerFields.counterpartyNameRaw,
+        amount,
+      });
+      await revenues.create({
+        businessId: params.id,
+        filingPeriodId: params.filingId,
+        transactionDate: transactionDate.toISOString(),
+        amount,
+        currency: row.currency || "EUR",
+        description: customerFields.description,
+        counterpartyNameRaw: customerFields.counterpartyNameRaw,
+        suggestedNoInvoiceReason: reason,
+        customer: {
+          name: customerFields.customerName,
+          registryCode: customerFields.customerRegistryCode,
+          vatNumber: customerFields.customerVatNumber,
+          address: customerFields.customerAddress,
+          email: customerFields.customerEmail,
         },
       });
       created++;

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { z } from "zod";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+import { templates } from "@/lib/db";
 import { getMembership, getFilingAccess, canManageFilings } from "@/lib/permissions";
 
 const schema = z.object({ name: z.string().min(1), html: z.string().min(1) });
@@ -22,12 +22,10 @@ export async function GET(request: Request, { params }: { params: { id: string }
     if (!access) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  const templates = await prisma.invoiceTemplate.findMany({
-    where: { businessId: params.id },
-    orderBy: { createdAt: "desc" },
-  });
+  const list = await templates.byBusiness(params.id);
+  list.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
-  return NextResponse.json(templates);
+  return NextResponse.json(list);
 }
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
@@ -46,9 +44,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
     return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const template = await prisma.invoiceTemplate.create({
-    data: { businessId: params.id, name: parsed.data.name, html: parsed.data.html },
-  });
+  const template = await templates.create(params.id, parsed.data.name, parsed.data.html);
 
   return NextResponse.json(template);
 }
