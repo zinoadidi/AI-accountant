@@ -143,12 +143,20 @@ export default function FilingDetailPage() {
         {new Date(filing.periodEnd).toLocaleDateString()} · Status: {filing.status}
       </p>
 
-      <Link
-        href={`/filings/${filing.id}/revenue`}
-        className="mb-8 inline-block rounded-md border border-slate-300 px-4 py-2 text-sm hover:bg-slate-100"
-      >
-        Revenue entries & missing invoices →
-      </Link>
+      <div className="mb-8 flex flex-wrap gap-3">
+        <Link
+          href={`/filings/${filing.id}/revenue`}
+          className="inline-block rounded-md border border-slate-300 px-4 py-2 text-sm hover:bg-slate-100"
+        >
+          Revenue entries & missing invoices →
+        </Link>
+        <Link
+          href={`/filings/${filing.id}/reports`}
+          className="inline-block rounded-md border border-slate-300 px-4 py-2 text-sm hover:bg-slate-100"
+        >
+          Reports — KMD & annual, fill for EMTA →
+        </Link>
+      </div>
 
       <section className="mb-8">
         <h2 className="mb-2 font-medium">Preview, download & file</h2>
@@ -212,7 +220,7 @@ export default function FilingDetailPage() {
               disabled={!acknowledged || statusUpdating}
               className="rounded-md bg-slate-900 px-4 py-2 text-sm text-white hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              {filing.status === "FILED" ? "Reopen filing" : "Mark as filed (manual submission in EMTA)"}
+              {filing.status === "FILED" ? "Reopen filing" : "Mark as filed (manual submission in EMTA/Ariregister)"}
             </button>
           )}
           <ComingSoonButton
