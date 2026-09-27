@@ -78,7 +78,7 @@ export function Landing({ authed }: { authed: boolean }) {
               ["Estonia", "#estonia"],
               ["Pricing", "#pricing"],
             ].map(([label, href]) => (
-              <Link key={href} href={href} style={{ textDecoration: "none" }}>
+              <Link key={href} href={href} style={{ textDecoration: "none", color: "inherit" }}>
                 <Typography variant="body2" color="text.secondary">
                   {label}
                 </Typography>
