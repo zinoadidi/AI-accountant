@@ -4,6 +4,17 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { FILING_PERIOD_TYPES } from "@/lib/types";
+import Container from "@mui/material/Container";
+import Box from "@mui/material/Box";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+import Typography from "@mui/material/Typography";
+import Button from "@mui/material/Button";
+import TextField from "@mui/material/TextField";
+import Select from "@mui/material/Select";
+import MenuItem from "@mui/material/MenuItem";
+import Chip from "@mui/material/Chip";
+import Alert from "@mui/material/Alert";
 
 type FilingPeriod = {
   id: string;
@@ -56,81 +67,95 @@ export default function FilingsPage() {
   }
 
   return (
-    <main className="mx-auto max-w-2xl px-4 py-16">
-      <h1 className="mb-2 text-2xl font-semibold">Filings</h1>
-      <p className="mb-6 text-sm text-slate-600">
+    <Container maxWidth="md" sx={{ py: 8 }}>
+      <Typography variant="h4" component="h1" sx={{ mb: 1 }}>
+        Filings
+      </Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
         Each filing period (a VAT return, an annual report) is where bank
         reconciliation, report drafting, and accountant review/sign-off get
         scoped and tracked.
-      </p>
+      </Typography>
 
-      <ul className="mb-8 divide-y divide-slate-200 rounded-md border border-slate-200">
-        {filings.length === 0 && (
-          <li className="px-4 py-3 text-sm text-slate-500">No filing periods yet</li>
-        )}
-        {filings.map((f) => (
-          <li key={f.id}>
-            <Link
+      <Card variant="outlined" sx={{ mb: 4 }}>
+        <CardContent sx={{ p: 0, "&:last-child": { pb: 0 } }}>
+          {filings.length === 0 && (
+            <Typography variant="body2" color="text.secondary" sx={{ px: 2, py: 1.5 }}>
+              No filing periods yet
+            </Typography>
+          )}
+          {filings.map((f) => (
+            <Box
+              key={f.id}
+              component={Link}
               href={`/filings/${f.id}`}
-              className="flex items-center justify-between px-4 py-3 hover:bg-slate-100"
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                px: 2,
+                py: 1.5,
+                textDecoration: "none",
+                color: "inherit",
+                borderTop: filings.indexOf(f) === 0 ? "none" : "1px solid",
+                borderColor: "divider",
+                "&:hover": { bgcolor: "action.hover" },
+              }}
             >
-              <div>
-                <p className="text-sm font-medium">{f.label}</p>
-                <p className="text-xs text-slate-500">
+              <Box>
+                <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                  {f.label}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
                   {f.type} · {new Date(f.periodStart).toLocaleDateString()} –{" "}
                   {new Date(f.periodEnd).toLocaleDateString()}
-                </p>
-              </div>
-              <span className="text-sm text-slate-500">{f.status}</span>
-            </Link>
-          </li>
-        ))}
-      </ul>
+                </Typography>
+              </Box>
+              <Chip size="small" label={f.status} />
+            </Box>
+          ))}
+        </CardContent>
+      </Card>
 
-      <h2 className="mb-2 font-medium">New filing period</h2>
-      <form onSubmit={handleCreate} className="flex flex-col gap-3">
-        <input
-          className="rounded-md border border-slate-300 px-3 py-2"
+      <Typography variant="h6" component="h2" sx={{ mb: 1 }}>
+        New filing period
+      </Typography>
+      <Box component="form" onSubmit={handleCreate} sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+        <TextField
+          fullWidth
           placeholder="Label, e.g. January 2026 VAT return"
           value={label}
           onChange={(e) => setLabel(e.target.value)}
           required
         />
-        <select
-          className="rounded-md border border-slate-300 px-3 py-2"
-          value={type}
-          onChange={(e) => setType(e.target.value)}
-        >
+        <Select fullWidth value={type} onChange={(e) => setType(e.target.value)}>
           {FILING_PERIOD_TYPES.map((t) => (
-            <option key={t} value={t}>
+            <MenuItem key={t} value={t}>
               {t}
-            </option>
+            </MenuItem>
           ))}
-        </select>
-        <div className="flex gap-3">
-          <input
-            className="flex-1 rounded-md border border-slate-300 px-3 py-2"
+        </Select>
+        <Box sx={{ display: "flex", gap: 1.5 }}>
+          <TextField
+            fullWidth
             type="date"
             value={periodStart}
             onChange={(e) => setPeriodStart(e.target.value)}
             required
           />
-          <input
-            className="flex-1 rounded-md border border-slate-300 px-3 py-2"
+          <TextField
+            fullWidth
             type="date"
             value={periodEnd}
             onChange={(e) => setPeriodEnd(e.target.value)}
             required
           />
-        </div>
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        <button
-          type="submit"
-          className="rounded-md bg-slate-900 px-4 py-2 text-white hover:bg-slate-700"
-        >
+        </Box>
+        {error && <Alert severity="error">{error}</Alert>}
+        <Button type="submit" variant="contained" sx={{ minHeight: 48 }}>
           Create filing period
-        </button>
-      </form>
-    </main>
+        </Button>
+      </Box>
+    </Container>
   );
 }

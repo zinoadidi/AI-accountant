@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Providers } from "./providers";
+import { MuiTheme } from "@/components/MuiTheme";
 
 export const metadata: Metadata = {
   title: "AI Accountant",
@@ -29,8 +30,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <link rel="apple-touch-icon" href="/icon.svg" />
       </head>
-      <body className="min-h-screen bg-slate-50 text-slate-900">
-        <Providers>{children}</Providers>
+      <body>
+        <Providers>
+          <MuiTheme>{children}</MuiTheme>
+        </Providers>
       </body>
     </html>
   );

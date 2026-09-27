@@ -2,12 +2,15 @@
 // This banner is the informational checkpoint used at strategic moments
 // (documents list, before preview/download/submit) instead of gating the
 // workflow on confirming every AI-suggested figure one at a time.
+import Alert from "@mui/material/Alert";
+import AlertTitle from "@mui/material/AlertTitle";
+import Typography from "@mui/material/Typography";
 
 export function Disclaimer({ children }: { children?: React.ReactNode }) {
   return (
-    <div className="mb-6 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-      <p className="font-medium">AI-assisted, not accountant-reviewed by default</p>
-      <p className="mt-1 text-amber-800">
+    <Alert severity="warning" sx={{ mb: 3 }}>
+      <AlertTitle>AI-assisted, not accountant-reviewed by default</AlertTitle>
+      <Typography variant="body2">
         {children ?? (
           <>
             Figures and categories suggested by AI are drafts. They don&apos;t
@@ -16,7 +19,7 @@ export function Disclaimer({ children }: { children?: React.ReactNode }) {
             reviews and signs it.
           </>
         )}
-      </p>
-    </div>
+      </Typography>
+    </Alert>
   );
 }

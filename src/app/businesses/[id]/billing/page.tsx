@@ -4,6 +4,13 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { ComingSoonButton } from "@/components/ComingSoon";
 import { PRICING_MODES, type PricingMode } from "@/lib/types";
+import Container from "@mui/material/Container";
+import Box from "@mui/material/Box";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+import Typography from "@mui/material/Typography";
+import Chip from "@mui/material/Chip";
+import Alert from "@mui/material/Alert";
 
 const PLAN_COPY: Record<PricingMode, { title: string; description: string }> = {
   PAY_PER_REPORT: {
@@ -57,47 +64,63 @@ export default function BillingPage() {
   }
 
   return (
-    <main className="mx-auto max-w-2xl px-4 py-16">
-      <h1 className="mb-2 text-2xl font-semibold">Billing</h1>
-      <p className="mb-8 text-sm text-slate-600">
+    <Container maxWidth="md" sx={{ py: 8 }}>
+      <Typography variant="h4" component="h1" gutterBottom>
+        Billing
+      </Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 4 }}>
         Choose how this business pays. You can switch modes any time — this
         picks the mode, it doesn&apos;t charge a card yet (see below).
-      </p>
+      </Typography>
 
-      <div className="mb-8 grid gap-4">
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mb: 4 }}>
         {PRICING_MODES.map((mode) => {
           const copy = PLAN_COPY[mode];
           const selected = pricingMode === mode;
           return (
-            <button
+            <Card
               key={mode}
+              component="button"
               type="button"
               onClick={() => choosePlan(mode)}
               disabled={saving}
-              className={`rounded-lg border p-4 text-left hover:bg-slate-100 disabled:opacity-60 ${
-                selected ? "border-slate-900 ring-1 ring-slate-900" : "border-slate-200"
-              }`}
+              sx={{
+                textAlign: "left",
+                cursor: "pointer",
+                borderColor: selected ? "primary.main" : undefined,
+                borderWidth: selected ? 2 : undefined,
+                opacity: saving ? 0.6 : 1,
+                font: "inherit",
+                p: 0,
+              }}
             >
-              <div className="flex items-center justify-between">
-                <h2 className="font-medium">{copy.title}</h2>
-                {selected && (
-                  <span className="rounded bg-slate-900 px-2 py-0.5 text-xs text-white">Selected</span>
-                )}
-              </div>
-              <p className="text-sm text-slate-600">{copy.description}</p>
-            </button>
+              <CardContent>
+                <Box sx={{ display: "flex", gap: 1, justifyContent: "space-between", alignItems: "center", mb: 1 }}>
+                  <Typography variant="h6" component="h2">
+                    {copy.title}
+                  </Typography>
+                  {selected && <Chip label="Selected" size="small" color="primary" />}
+                </Box>
+                <Typography variant="body2" color="text.secondary">
+                  {copy.description}
+                </Typography>
+              </CardContent>
+            </Card>
           );
         })}
-      </div>
+      </Box>
 
-      {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
 
       <ComingSoonButton
         label="Pay & activate"
         title="Payment processing"
         description="Card/bank payment processing for whichever plan you've selected isn't wired up yet — the plan choice above is saved so billing can be enabled without asking again."
-        className="rounded-md bg-slate-900 px-4 py-2 text-sm text-white hover:bg-slate-700 disabled:opacity-50"
       />
-    </main>
+    </Container>
   );
 }

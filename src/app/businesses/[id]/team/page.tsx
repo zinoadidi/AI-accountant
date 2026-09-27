@@ -2,6 +2,23 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
+import Container from "@mui/material/Container";
+import Box from "@mui/material/Box";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+import Typography from "@mui/material/Typography";
+import TextField from "@mui/material/TextField";
+import Button from "@mui/material/Button";
+import Alert from "@mui/material/Alert";
+import List from "@mui/material/List";
+import ListItem from "@mui/material/ListItem";
+import ListItemText from "@mui/material/ListItemText";
+import Chip from "@mui/material/Chip";
+import FormControl from "@mui/material/FormControl";
+import InputLabel from "@mui/material/InputLabel";
+import Select from "@mui/material/Select";
+import MenuItem from "@mui/material/MenuItem";
+import Link from "@mui/material/Link";
 
 type Member = { id: string; role: string; user: { name: string; email: string } };
 type Invitation = { id: string; email: string; role: string; token: string };
@@ -47,76 +64,92 @@ export default function TeamPage() {
   }
 
   return (
-    <main className="mx-auto max-w-2xl px-4 py-16">
-      <h1 className="mb-6 text-2xl font-semibold">Team</h1>
+    <Container maxWidth="md" sx={{ py: 8 }}>
+      <Typography variant="h4" component="h1" sx={{ mb: 3 }}>
+        Team
+      </Typography>
 
-      <section className="mb-8">
-        <h2 className="mb-2 font-medium">Members</h2>
-        <ul className="divide-y divide-slate-200 rounded-md border border-slate-200">
-          {members.map((m) => (
-            <li key={m.id} className="flex justify-between px-4 py-2 text-sm">
-              <span>
-                {m.user.name} · {m.user.email}
-              </span>
-              <span className="text-slate-500">{m.role}</span>
-            </li>
-          ))}
-        </ul>
-      </section>
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Typography variant="h6" component="h2" sx={{ mb: 1 }}>
+            Members
+          </Typography>
+          <List disablePadding>
+            {members.map((m) => (
+              <ListItem key={m.id} divider disablePadding sx={{ py: 1 }}>
+                <ListItemText
+                  primary={`${m.user.name} · ${m.user.email}`}
+                  slotProps={{ primary: { variant: "body2" } }}
+                />
+                <Chip label={m.role} size="small" variant="outlined" />
+              </ListItem>
+            ))}
+          </List>
+        </CardContent>
+      </Card>
 
-      <section className="mb-8">
-        <h2 className="mb-2 font-medium">Pending invitations</h2>
-        <ul className="divide-y divide-slate-200 rounded-md border border-slate-200">
-          {invitations.length === 0 && (
-            <li className="px-4 py-2 text-sm text-slate-500">None pending</li>
+      <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Typography variant="h6" component="h2" sx={{ mb: 1 }}>
+            Pending invitations
+          </Typography>
+          <List disablePadding>
+            {invitations.length === 0 && (
+              <ListItem disablePadding sx={{ py: 1 }}>
+                <ListItemText primary="None pending" slotProps={{ primary: { variant: "body2", color: "text.secondary" } }} />
+              </ListItem>
+            )}
+            {invitations.map((i) => (
+              <ListItem key={i.id} divider disablePadding sx={{ py: 1 }}>
+                <ListItemText primary={i.email} slotProps={{ primary: { variant: "body2" } }} />
+                <Chip label={i.role} size="small" variant="outlined" />
+              </ListItem>
+            ))}
+          </List>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent>
+          <Typography variant="h6" component="h2" sx={{ mb: 2 }}>
+            Invite someone
+          </Typography>
+          <Box component="form" onSubmit={handleInvite} sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <TextField
+              label="Email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              fullWidth
+            />
+            <FormControl fullWidth>
+              <InputLabel id="invite-role-label">Role</InputLabel>
+              <Select
+                labelId="invite-role-label"
+                label="Role"
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+              >
+                <MenuItem value="ACCOUNTANT">Accountant (reviews & signs filings)</MenuItem>
+                <MenuItem value="BOOKKEEPER">Bookkeeper</MenuItem>
+                <MenuItem value="EMPLOYEE">Employee (can submit receipts)</MenuItem>
+                <MenuItem value="VIEWER">Viewer</MenuItem>
+              </Select>
+            </FormControl>
+            {error && <Alert severity="error">{error}</Alert>}
+            <Button type="submit" variant="contained">
+              Send invitation
+            </Button>
+          </Box>
+          {lastInviteLink && (
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: "block", wordBreak: "break-all" }}>
+              Invite link (share manually until email sending is wired up):{" "}
+              <Link href={lastInviteLink}>{lastInviteLink}</Link>
+            </Typography>
           )}
-          {invitations.map((i) => (
-            <li key={i.id} className="flex justify-between px-4 py-2 text-sm">
-              <span>{i.email}</span>
-              <span className="text-slate-500">{i.role}</span>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <section>
-        <h2 className="mb-2 font-medium">Invite someone</h2>
-        <form onSubmit={handleInvite} className="flex flex-col gap-3">
-          <input
-            className="rounded-md border border-slate-300 px-3 py-2"
-            placeholder="Email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-          <select
-            className="rounded-md border border-slate-300 px-3 py-2"
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
-          >
-            <option value="ACCOUNTANT">Accountant (reviews & signs filings)</option>
-            <option value="BOOKKEEPER">Bookkeeper</option>
-            <option value="EMPLOYEE">Employee (can submit receipts)</option>
-            <option value="VIEWER">Viewer</option>
-          </select>
-          {error && <p className="text-sm text-red-600">{error}</p>}
-          <button
-            type="submit"
-            className="rounded-md bg-slate-900 px-4 py-2 text-white hover:bg-slate-700"
-          >
-            Send invitation
-          </button>
-        </form>
-        {lastInviteLink && (
-          <p className="mt-3 break-all text-xs text-slate-500">
-            Invite link (share manually until email sending is wired up):{" "}
-            <a className="underline" href={lastInviteLink}>
-              {lastInviteLink}
-            </a>
-          </p>
-        )}
-      </section>
-    </main>
+        </CardContent>
+      </Card>
+    </Container>
   );
 }

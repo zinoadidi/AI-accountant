@@ -3,6 +3,16 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import Container from "@mui/material/Container";
+import Box from "@mui/material/Box";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+import Typography from "@mui/material/Typography";
+import Button from "@mui/material/Button";
+import Select from "@mui/material/Select";
+import MenuItem from "@mui/material/MenuItem";
+import Chip from "@mui/material/Chip";
+import Alert from "@mui/material/Alert";
 
 type Statement = {
   id: string;
@@ -106,106 +116,155 @@ export default function StatementsPage() {
   }
 
   return (
-    <main className="mx-auto max-w-4xl px-4 py-8 sm:py-12">
-      <h1 className="text-2xl font-semibold">Bank statements</h1>
-      <p className="mb-4 mt-1 text-sm text-slate-600">
+    <Container maxWidth="md" sx={{ py: { xs: 4, sm: 6 } }}>
+      <Typography variant="h4" component="h1">
+        Bank statements
+      </Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5, mb: 2 }}>
         Upload a bank CSV, pick a filing period, and reconcile it against your
         documents and revenue.
-      </p>
+      </Typography>
 
-      <label className="block min-h-[56px] cursor-pointer rounded-lg border-2 border-dashed border-slate-300 bg-white px-4 py-4 text-center text-base font-medium hover:bg-slate-50">
+      <Button
+        variant="outlined"
+        component="label"
+        fullWidth
+        disabled={uploading}
+        sx={{ minHeight: 56, fontSize: "1rem", borderStyle: "dashed" }}
+      >
         {uploading ? "Uploading..." : "Upload CSV statement"}
-        <input
-          type="file"
-          accept=".csv"
-          className="hidden"
-          onChange={handleUpload}
-          disabled={uploading}
-        />
-      </label>
-      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+        <input type="file" accept=".csv" hidden onChange={handleUpload} disabled={uploading} />
+      </Button>
+      {error && (
+        <Alert severity="error" sx={{ mt: 1 }}>
+          {error}
+        </Alert>
+      )}
 
       {statements.length === 0 ? (
-        <p className="mt-6 rounded-md border border-slate-200 bg-white px-4 py-3 text-sm text-slate-500">
-          No statements yet
-        </p>
+        <Card variant="outlined" sx={{ mt: 3 }}>
+          <CardContent>
+            <Typography variant="body2" color="text.secondary">
+              No statements yet
+            </Typography>
+          </CardContent>
+        </Card>
       ) : (
-        <ul className="mt-6 grid gap-3">
+        <Box sx={{ mt: 3, display: "grid", gap: 1.5 }}>
           {statements.map((s) => {
             const r = results[s.id];
             return (
-              <li key={s.id} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-                <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <p className="font-medium">{s.fileName}</p>
-                  <p className="text-xs text-slate-500">
-                    {[s.source, s.txCount != null ? `${s.txCount} txns` : null, new Date(s.createdAt).toLocaleDateString()]
-                      .filter(Boolean)
-                      .join(" · ")}
-                  </p>
-                </div>
-                <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-                  <select
-                    className="flex-1 rounded-md border border-slate-300 px-3 py-2.5 text-sm"
-                    value={selected[s.id] ?? ""}
-                    onChange={(e) => setSelected((m) => ({ ...m, [s.id]: e.target.value }))}
+              <Card key={s.id} variant="outlined">
+                <CardContent>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      flexWrap: "wrap",
+                      alignItems: "baseline",
+                      justifyContent: "space-between",
+                      gap: 1,
+                    }}
                   >
-                    <option value="">Select filing period</option>
-                    {filings.map((f) => (
-                      <option key={f.id} value={f.id}>{f.label}</option>
-                    ))}
-                  </select>
-                  <button
-                    onClick={() => reconcile(s.id)}
-                    disabled={!selected[s.id] || busy === s.id}
-                    className="min-h-[48px] rounded-md bg-slate-900 px-5 py-2 text-sm text-white hover:bg-slate-700 disabled:opacity-50"
+                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                      {s.fileName}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {[s.source, s.txCount != null ? `${s.txCount} txns` : null, new Date(s.createdAt).toLocaleDateString()]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </Typography>
+                  </Box>
+                  <Box
+                    sx={{
+                      mt: 1.5,
+                      display: "flex",
+                      flexDirection: { xs: "column", sm: "row" },
+                      gap: 1,
+                    }}
                   >
-                    {busy === s.id ? "Reconciling..." : "Reconcile"}
-                  </button>
-                </div>
-                {r && (
-                  <div className="mt-3 rounded-md bg-slate-50 p-3 text-sm">
-                    <div className="flex flex-wrap gap-2 text-xs">
-                      {countOf(r.matched) != null && (
-                        <span className="rounded bg-emerald-100 px-2 py-0.5 text-emerald-800">matched: {countOf(r.matched)}</span>
-                      )}
-                      {countOf(r.created) != null && (
-                        <span className="rounded bg-sky-100 px-2 py-0.5 text-sky-800">created: {countOf(r.created)}</span>
-                      )}
-                      {countOf(r.unmatchedDebits) != null && (
-                        <span className="rounded bg-amber-100 px-2 py-0.5 text-amber-900">unmatched debits: {countOf(r.unmatchedDebits)}</span>
-                      )}
-                      {countOf(r.needsAttention) != null && (
-                        <span className="rounded bg-red-100 px-2 py-0.5 text-red-800">needs attention: {countOf(r.needsAttention)}</span>
-                      )}
-                    </div>
-                    {listOf(r.unmatchedDebits).length > 0 && (
-                      <div className="mt-2">
-                        <p className="font-medium">Unmatched debits</p>
-                        <ul className="ml-4 list-disc text-slate-600">
-                          {listOf(r.unmatchedDebits).map((x, i) => <li key={i}>{x}</li>)}
-                        </ul>
-                      </div>
-                    )}
-                    {listOf(r.needsAttention).length > 0 && (
-                      <div className="mt-2">
-                        <p className="font-medium">Needs attention</p>
-                        <ul className="ml-4 list-disc text-slate-600">
-                          {listOf(r.needsAttention).map((x, i) => <li key={i}>{x}</li>)}
-                        </ul>
-                      </div>
-                    )}
-                    {selected[s.id] && (
-                      <Link href={`/filings/${selected[s.id]}`} className="mt-2 inline-block text-slate-700 underline">
-                        Open filing revenue
-                      </Link>
-                    )}
-                  </div>
-                )}
-              </li>
+                    <Select
+                      fullWidth
+                      displayEmpty
+                      value={selected[s.id] ?? ""}
+                      onChange={(e) => setSelected((m) => ({ ...m, [s.id]: e.target.value }))}
+                    >
+                      <MenuItem value="">Select filing period</MenuItem>
+                      {filings.map((f) => (
+                        <MenuItem key={f.id} value={f.id}>
+                          {f.label}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                    <Button
+                      variant="contained"
+                      onClick={() => reconcile(s.id)}
+                      disabled={!selected[s.id] || busy === s.id}
+                      sx={{ minHeight: 48, minWidth: { sm: 140 } }}
+                    >
+                      {busy === s.id ? "Reconciling..." : "Reconcile"}
+                    </Button>
+                  </Box>
+                  {r && (
+                    <Card variant="outlined" sx={{ mt: 1.5, bgcolor: "grey.50" }}>
+                      <CardContent>
+                        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+                          {countOf(r.matched) != null && (
+                            <Chip size="small" color="success" label={`matched: ${countOf(r.matched)}`} />
+                          )}
+                          {countOf(r.created) != null && (
+                            <Chip size="small" color="info" label={`created: ${countOf(r.created)}`} />
+                          )}
+                          {countOf(r.unmatchedDebits) != null && (
+                            <Chip size="small" color="warning" label={`unmatched debits: ${countOf(r.unmatchedDebits)}`} />
+                          )}
+                          {countOf(r.needsAttention) != null && (
+                            <Chip size="small" color="error" label={`needs attention: ${countOf(r.needsAttention)}`} />
+                          )}
+                        </Box>
+                        {listOf(r.unmatchedDebits).length > 0 && (
+                          <Box sx={{ mt: 1 }}>
+                            <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                              Unmatched debits
+                            </Typography>
+                            <Box component="ul" sx={{ ml: 2, color: "text.secondary" }}>
+                              {listOf(r.unmatchedDebits).map((x, i) => (
+                                <li key={i}>
+                                  <Typography variant="body2">{x}</Typography>
+                                </li>
+                              ))}
+                            </Box>
+                          </Box>
+                        )}
+                        {listOf(r.needsAttention).length > 0 && (
+                          <Box sx={{ mt: 1 }}>
+                            <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                              Needs attention
+                            </Typography>
+                            <Box component="ul" sx={{ ml: 2, color: "text.secondary" }}>
+                              {listOf(r.needsAttention).map((x, i) => (
+                                <li key={i}>
+                                  <Typography variant="body2">{x}</Typography>
+                                </li>
+                              ))}
+                            </Box>
+                          </Box>
+                        )}
+                        {selected[s.id] && (
+                          <Link href={`/filings/${selected[s.id]}`}>
+                            <Typography variant="body2" sx={{ mt: 1, textDecoration: "underline" }}>
+                              Open filing revenue
+                            </Typography>
+                          </Link>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )}
+                </CardContent>
+              </Card>
             );
           })}
-        </ul>
+        </Box>
       )}
-    </main>
+    </Container>
   );
 }

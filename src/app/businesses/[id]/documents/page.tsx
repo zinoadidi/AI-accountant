@@ -3,6 +3,15 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
 import { Disclaimer } from "@/components/Disclaimer";
+import Container from "@mui/material/Container";
+import Box from "@mui/material/Box";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+import CardMedia from "@mui/material/CardMedia";
+import Typography from "@mui/material/Typography";
+import Button from "@mui/material/Button";
+import Chip from "@mui/material/Chip";
+import Alert from "@mui/material/Alert";
 
 type Doc = {
   id: string;
@@ -79,13 +88,15 @@ export default function DocumentsPage() {
   );
 
   return (
-    <main className="mx-auto max-w-4xl px-4 py-8 sm:py-12">
-      <h1 className="mb-2 text-2xl font-semibold">Documents</h1>
-      <p className="mb-4 text-sm text-slate-600">
+    <Container maxWidth="md" sx={{ py: { xs: 4, sm: 6 } }}>
+      <Typography variant="h4" component="h1" sx={{ mb: 1 }}>
+        Documents
+      </Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         Upload receipts, bank statements, or invoices. Each one gets an
         AI-suggested category — correcting it helps accuracy, but it&apos;s
         not required before moving on.
-      </p>
+      </Typography>
 
       <Disclaimer />
 
@@ -94,7 +105,7 @@ export default function DocumentsPage() {
         type="file"
         accept="image/*"
         capture="environment"
-        className="hidden"
+        hidden
         onChange={handleChange}
         disabled={uploading}
       />
@@ -102,100 +113,139 @@ export default function DocumentsPage() {
         ref={galleryRef}
         type="file"
         accept="image/*,.pdf,.csv"
-        className="hidden"
+        hidden
         onChange={handleChange}
         disabled={uploading}
       />
-      <div className="grid grid-cols-2 gap-3">
-        <button
+      <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1.5, mt: 2 }}>
+        <Button
+          variant="contained"
           onClick={() => cameraRef.current?.click()}
           disabled={uploading}
-          className="min-h-[56px] rounded-lg bg-slate-900 px-4 py-3 text-base font-medium text-white hover:bg-slate-700 disabled:opacity-50"
+          sx={{ minHeight: 56, fontSize: "1rem" }}
         >
           Take photo
-        </button>
-        <button
+        </Button>
+        <Button
+          variant="outlined"
           onClick={() => galleryRef.current?.click()}
           disabled={uploading}
-          className="min-h-[56px] rounded-lg border border-slate-300 bg-white px-4 py-3 text-base font-medium hover:bg-slate-100 disabled:opacity-50"
+          sx={{ minHeight: 56, fontSize: "1rem" }}
         >
           Upload file
-        </button>
-      </div>
-      {uploading && <p className="mt-2 text-sm text-slate-500">Uploading and categorizing...</p>}
-      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
-
-      <div className="mt-6 flex flex-wrap gap-2" role="tablist" aria-label="Filter by type">
-        {FILTERS.map((f) => (
-          <button
-            key={f}
-            onClick={() => setFilter(f)}
-            className={`rounded-full px-3 py-1.5 text-sm ${
-              filter === f
-                ? "bg-slate-900 text-white"
-                : "border border-slate-300 bg-white text-slate-600 hover:bg-slate-100"
-            }`}
-          >
-            {f}
-          </button>
-        ))}
-      </div>
-
-      {visible.length === 0 && (
-        <p className="mt-6 rounded-md border border-slate-200 bg-white px-4 py-3 text-sm text-slate-500">
-          No documents yet{filter !== "ALL" ? " for this filter" : ""}
-        </p>
+        </Button>
+      </Box>
+      {uploading && (
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+          Uploading and categorizing...
+        </Typography>
+      )}
+      {error && (
+        <Alert severity="error" sx={{ mt: 1 }}>
+          {error}
+        </Alert>
       )}
 
-      <ul className="mt-4 grid gap-3 sm:grid-cols-2">
+      <Box
+        sx={{ display: "flex", flexWrap: "wrap", gap: 1, mt: 3 }}
+        role="tablist"
+        aria-label="Filter by type"
+      >
+        {FILTERS.map((f) => (
+          <Chip
+            key={f}
+            label={f}
+            clickable
+            color={filter === f ? "primary" : "default"}
+            variant={filter === f ? "filled" : "outlined"}
+            onClick={() => setFilter(f)}
+          />
+        ))}
+      </Box>
+
+      {visible.length === 0 && (
+        <Card variant="outlined" sx={{ mt: 3 }}>
+          <CardContent>
+            <Typography variant="body2" color="text.secondary">
+              No documents yet{filter !== "ALL" ? " for this filter" : ""}
+            </Typography>
+          </CardContent>
+        </Card>
+      )}
+
+      <Box
+        sx={{
+          mt: 2,
+          display: "grid",
+          gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+          gap: 1.5,
+        }}
+      >
         {visible.map((d) => (
-          <li key={d.id} className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+          <Card key={d.id} variant="outlined">
             {d.fileId && isImage(d) ? (
-              <img
-                src={`/api/files/${d.fileId}`}
+              <CardMedia
+                component="img"
+                image={`/api/files/${d.fileId}`}
                 alt={d.fileName}
-                className="h-40 w-full object-cover"
                 loading="lazy"
+                sx={{ height: 160, objectFit: "cover" }}
               />
             ) : (
-              <div className="flex h-20 items-center justify-center bg-slate-100 text-xs uppercase tracking-wide text-slate-400">
-                {d.type ?? d.mimeType ?? "file"}
-              </div>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  height: 80,
+                  bgcolor: "grey.100",
+                }}
+              >
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  sx={{ textTransform: "uppercase", letterSpacing: 1 }}
+                >
+                  {d.type ?? d.mimeType ?? "file"}
+                </Typography>
+              </Box>
             )}
-            <div className="p-3">
-              <p className="truncate text-sm font-medium" title={d.fileName}>{d.fileName}</p>
-              <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs">
-                {d.type && (
-                  <span className="rounded bg-slate-100 px-2 py-0.5 text-slate-600">{d.type}</span>
-                )}
-                {d.status && (
-                  <span className="rounded bg-slate-100 px-2 py-0.5 text-slate-600">{d.status}</span>
-                )}
+            <CardContent>
+              <Typography variant="body2" noWrap title={d.fileName} sx={{ fontWeight: 500 }}>
+                {d.fileName}
+              </Typography>
+              <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 0.75, mt: 1 }}>
+                {d.type && <Chip size="small" label={d.type} />}
+                {d.status && <Chip size="small" label={d.status} />}
                 {d.confirmedCategory ? (
-                  <span className="rounded bg-emerald-100 px-2 py-0.5 text-emerald-800">
-                    Confirmed: {d.confirmedCategory}
-                  </span>
+                  <Chip size="small" color="success" label={`Confirmed: ${d.confirmedCategory}`} />
                 ) : d.suggestedCategory ? (
-                  <span className="rounded bg-amber-100 px-2 py-0.5 text-amber-900">
-                    AI: {d.suggestedCategory} ({Math.round((d.aiConfidence ?? 0) * 100)}%)
-                  </span>
+                  <Chip
+                    size="small"
+                    color="warning"
+                    label={`AI: ${d.suggestedCategory} (${Math.round((d.aiConfidence ?? 0) * 100)}%)`}
+                  />
                 ) : (
-                  <span className="text-slate-500">Categorizing...</span>
+                  <Typography variant="caption" color="text.secondary">
+                    Categorizing...
+                  </Typography>
                 )}
-              </div>
+              </Box>
               {!d.confirmedCategory && d.suggestedCategory && (
-                <button
+                <Button
+                  variant="outlined"
+                  fullWidth
                   onClick={() => confirmCategory(d.id, d.suggestedCategory as string)}
-                  className="mt-2 w-full rounded-md border border-slate-300 px-3 py-2 text-sm hover:bg-slate-100"
                   title="Optional — not required to proceed"
+                  sx={{ mt: 1 }}
                 >
                   Confirm (optional)
-                </button>
+                </Button>
               )}
-            </div>
-          </li>
+            </CardContent>
+          </Card>
         ))}
-      </ul>
-    </main>
+      </Box>
+    </Container>
   );
 }

@@ -4,6 +4,16 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { Disclaimer } from "@/components/Disclaimer";
+import Container from "@mui/material/Container";
+import Box from "@mui/material/Box";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+import Typography from "@mui/material/Typography";
+import Button from "@mui/material/Button";
+import TextField from "@mui/material/TextField";
+import Tabs from "@mui/material/Tabs";
+import Tab from "@mui/material/Tab";
+import Alert from "@mui/material/Alert";
 
 type Boxes = Record<string, number | null>;
 
@@ -110,94 +120,123 @@ export default function ReportsPage() {
   const infPartners = (computed.infPartners ?? []) as { name: string; total: number }[];
 
   return (
-    <main className="mx-auto max-w-2xl px-4 py-16">
-      <p className="mb-1 text-sm text-slate-500">
-        <Link href={`/filings/${params.filingId}`} className="hover:underline">
-          ← {label || "Filing"}
-        </Link>
-      </p>
-      <h1 className="mb-1 text-2xl font-semibold">Reports — fill for EMTA</h1>
-      <p className="mb-4 text-sm text-slate-600">
+    <Container maxWidth="md" sx={{ py: 8 }}>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+        <Link href={`/filings/${params.filingId}`}>← {label || "Filing"}</Link>
+      </Typography>
+      <Typography variant="h4" component="h1" sx={{ mb: 0.5 }}>
+        Reports — fill for EMTA
+      </Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         Fill these in the app, then copy the figures into EMTA (KMD) or
         Ariregister (annual report) yourself. No direct connection needed.
-      </p>
+      </Typography>
 
-      <div className="mb-6 flex gap-2">
-        {(["KMD", "ANNUAL"] as const).map((k) => (
-          <button
-            key={k}
-            type="button"
-            onClick={() => setKind(k)}
-            className={`rounded-md px-4 py-2 text-sm ${
-              kind === k ? "bg-slate-900 text-white" : "border border-slate-300 hover:bg-slate-100"
-            }`}
-          >
-            {k === "KMD" ? "Monthly · KMD (VAT)" : "Yearly · Annual report"}
-          </button>
-        ))}
-      </div>
+      <Tabs
+        value={kind}
+        onChange={(_, v) => setKind(v)}
+        sx={{ mb: 3 }}
+        aria-label="Report kind"
+      >
+        <Tab value="KMD" label="Monthly · KMD (VAT)" />
+        <Tab value="ANNUAL" label="Yearly · Annual report" />
+      </Tabs>
 
-      {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
 
-      <div className="mb-6 divide-y divide-slate-200 rounded-md border border-slate-200">
-        {rows.map((row) => (
-          <div key={row.key} className="flex items-center justify-between gap-3 px-4 py-3">
-            <div>
-              <p className="text-sm font-medium">{row.label}</p>
-              <p className="text-xs text-slate-500">{row.hint}</p>
-            </div>
-            <input
-              type="number"
-              step="0.01"
-              disabled={!canEdit}
-              value={value(row.key)}
-              onChange={(e) =>
-                setBoxes((b) => ({ ...b, [row.key]: e.target.value === "" ? null : Number(e.target.value) }))
-              }
-              className="w-36 rounded-md border border-slate-300 px-3 py-2 text-right text-sm disabled:bg-slate-50"
-            />
-          </div>
-        ))}
-      </div>
+      <Card variant="outlined" sx={{ mb: 3 }}>
+        <CardContent sx={{ p: 0, "&:last-child": { pb: 0 } }}>
+          {rows.map((row, i) => (
+            <Box
+              key={row.key}
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 1.5,
+                px: 2,
+                py: 1.5,
+                borderTop: i === 0 ? "none" : "1px solid",
+                borderColor: "divider",
+              }}
+            >
+              <Box>
+                <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                  {row.label}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {row.hint}
+                </Typography>
+              </Box>
+              <TextField
+                type="number"
+                slotProps={{ htmlInput: { step: "0.01" } }}
+                disabled={!canEdit}
+                value={value(row.key)}
+                onChange={(e) =>
+                  setBoxes((b) => ({ ...b, [row.key]: e.target.value === "" ? null : Number(e.target.value) }))
+                }
+                sx={{ width: 144, "& input": { textAlign: "right" } }}
+              />
+            </Box>
+          ))}
+        </CardContent>
+      </Card>
 
       {kind === "KMD" && (
-        <section className="mb-6 rounded-md border border-slate-200 p-4">
-          <h2 className="mb-2 text-sm font-medium">KMD INF annex — partners ≥ €1,000</h2>
-          {infPartners.length === 0 ? (
-            <p className="text-sm text-slate-500">None this period.</p>
-          ) : (
-            <ul className="text-sm">
-              {infPartners.map((p) => (
-                <li key={p.name} className="flex justify-between py-1">
-                  <span>{p.name}</span>
-                  <span>€{p.total.toFixed(2)}</span>
-                </li>
-              ))}
-            </ul>
-          )}
-          {Number(computed.expenseDocCount ?? 0) > 0 && (
-            <p className="mt-2 text-xs text-slate-500">
-              Input-VAT hint: {String(computed.expenseDocCount)} expense documents on file,
-              suggested total €{Number(computed.expenseHintTotal ?? 0).toFixed(2)} — verify
-              deductible VAT per invoice before copying to row 5.
-            </p>
-          )}
-        </section>
+        <Card variant="outlined" sx={{ mb: 3 }}>
+          <CardContent>
+            <Typography variant="body2" sx={{ fontWeight: 500, mb: 1 }}>
+              KMD INF annex — partners ≥ €1,000
+            </Typography>
+            {infPartners.length === 0 ? (
+              <Typography variant="body2" color="text.secondary">
+                None this period.
+              </Typography>
+            ) : (
+              <Box component="ul" sx={{ listStyle: "none", p: 0, m: 0 }}>
+                {infPartners.map((p) => (
+                  <Box
+                    key={p.name}
+                    component="li"
+                    sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", py: 0.5 }}
+                  >
+                    <Typography variant="body2">{p.name}</Typography>
+                    <Typography variant="body2">€{p.total.toFixed(2)}</Typography>
+                  </Box>
+                ))}
+              </Box>
+            )}
+            {Number(computed.expenseDocCount ?? 0) > 0 && (
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: "block" }}>
+                Input-VAT hint: {String(computed.expenseDocCount)} expense documents on file,
+                suggested total €{Number(computed.expenseHintTotal ?? 0).toFixed(2)} — verify
+                deductible VAT per invoice before copying to row 5.
+              </Typography>
+            )}
+          </CardContent>
+        </Card>
       )}
 
       {kind === "ANNUAL" && (
-        <section className="mb-6 rounded-md border border-slate-200 p-4 text-sm text-slate-600">
-          <p>
-            Profit hint: €{(value("revenue") - value("expenses")).toFixed(2)} (revenue −
-            expenses). {String(computed.expenseDocs ?? 0)} expense documents on file ·{" "}
-            {String(computed.outstandingInvoices ?? 0)} open revenue entries (receivables
-            hint).
-          </p>
-          <p className="mt-1 text-xs text-slate-500">
-            Copy into the Ariregister annual-report environment — the micro-entity
-            schema may ask for these figures split further.
-          </p>
-        </section>
+        <Card variant="outlined" sx={{ mb: 3 }}>
+          <CardContent>
+            <Typography variant="body2" color="text.secondary">
+              Profit hint: €{(value("revenue") - value("expenses")).toFixed(2)} (revenue −
+              expenses). {String(computed.expenseDocs ?? 0)} expense documents on file ·{" "}
+              {String(computed.outstandingInvoices ?? 0)} open revenue entries (receivables
+              hint).
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: "block" }}>
+              Copy into the Ariregister annual-report environment — the micro-entity
+              schema may ask for these figures split further.
+            </Typography>
+          </CardContent>
+        </Card>
       )}
 
       <Disclaimer>
@@ -206,25 +245,21 @@ export default function ReportsPage() {
         documents before submitting in EMTA/Ariregister.
       </Disclaimer>
 
-      <div className="flex flex-wrap gap-3">
+      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.5, mt: 2 }}>
         {canEdit && (
-          <button
-            type="button"
-            onClick={handleSave}
-            className="rounded-md bg-slate-900 px-4 py-2 text-sm text-white hover:bg-slate-700"
-          >
+          <Button type="button" variant="contained" onClick={handleSave} sx={{ minHeight: 48 }}>
             Save draft
-          </button>
+          </Button>
         )}
-        <button
-          type="button"
-          onClick={downloadSheet}
-          className="rounded-md border border-slate-300 px-4 py-2 text-sm hover:bg-slate-100"
-        >
+        <Button type="button" variant="outlined" onClick={downloadSheet} sx={{ minHeight: 48 }}>
           Download filing sheet
-        </button>
-      </div>
-      {saved && <p className="mt-2 text-sm text-green-700">Draft saved.</p>}
-    </main>
+        </Button>
+      </Box>
+      {saved && (
+        <Typography variant="body2" color="success.dark" sx={{ mt: 1 }}>
+          Draft saved.
+        </Typography>
+      )}
+    </Container>
   );
 }

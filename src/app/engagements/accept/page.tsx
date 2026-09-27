@@ -3,10 +3,20 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
+import Container from "@mui/material/Container";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+import Typography from "@mui/material/Typography";
 
 export default function AcceptEngagementPage() {
   return (
-    <Suspense fallback={<main className="mx-auto max-w-sm px-4 py-16 text-center">Loading...</main>}>
+    <Suspense
+      fallback={
+        <Container maxWidth="sm" sx={{ py: 8, textAlign: "center" }}>
+          <Typography variant="body1">Loading...</Typography>
+        </Container>
+      }
+    >
       <AcceptEngagementInner />
     </Suspense>
   );
@@ -46,8 +56,12 @@ function AcceptEngagementInner() {
   }, [status, token, router]);
 
   return (
-    <main className="mx-auto max-w-sm px-4 py-16 text-center">
-      <p>{message}</p>
-    </main>
+    <Container maxWidth="sm" sx={{ py: 8, textAlign: "center" }}>
+      <Card>
+        <CardContent>
+          <Typography variant="body1">{message}</Typography>
+        </CardContent>
+      </Card>
+    </Container>
   );
 }

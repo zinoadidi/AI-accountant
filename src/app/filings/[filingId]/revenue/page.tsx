@@ -4,6 +4,22 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { Disclaimer } from "@/components/Disclaimer";
+import Container from "@mui/material/Container";
+import Box from "@mui/material/Box";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+import Typography from "@mui/material/Typography";
+import Button from "@mui/material/Button";
+import TextField from "@mui/material/TextField";
+import Select from "@mui/material/Select";
+import MenuItem from "@mui/material/MenuItem";
+import Table from "@mui/material/Table";
+import TableHead from "@mui/material/TableHead";
+import TableBody from "@mui/material/TableBody";
+import TableRow from "@mui/material/TableRow";
+import TableCell from "@mui/material/TableCell";
+import Chip from "@mui/material/Chip";
+import Alert from "@mui/material/Alert";
 
 type Entry = {
   id: string;
@@ -143,25 +159,27 @@ export default function RevenueEntriesPage() {
 
   if (!businessId) {
     return (
-      <main className="mx-auto max-w-3xl px-4 py-16">
-        <p className="text-sm text-slate-500">Loading...</p>
-      </main>
+      <Container maxWidth="md" sx={{ py: 8 }}>
+        <Typography variant="body2" color="text.secondary">
+          Loading...
+        </Typography>
+      </Container>
     );
   }
 
   return (
-    <main className="mx-auto max-w-3xl px-4 py-16">
-      <p className="mb-1 text-sm text-slate-500">
-        <Link href={`/filings/${params.filingId}`} className="hover:underline">
-          ← Back to filing
-        </Link>
-      </p>
-      <h1 className="mb-2 text-2xl font-semibold">Revenue entries &amp; missing invoices</h1>
-      <p className="mb-4 text-sm text-slate-600">
+    <Container maxWidth="md" sx={{ py: 8 }}>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+        <Link href={`/filings/${params.filingId}`}>← Back to filing</Link>
+      </Typography>
+      <Typography variant="h4" component="h1" sx={{ mb: 1 }}>
+        Revenue entries &amp; missing invoices
+      </Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         Each entry is a payment that may need an outgoing sales invoice.
         Bank sync isn&apos;t built yet, so entries are added here or imported
         from a CSV export of the statement in the meantime.
-      </p>
+      </Typography>
 
       <Disclaimer>
         Not every entry needs an invoice — marking one as not needing one is
@@ -169,47 +187,48 @@ export default function RevenueEntriesPage() {
         legal determination by this system.
       </Disclaimer>
 
-      <section className="mb-8 flex flex-wrap items-center gap-3">
-        <a
-          href={`/api/businesses/${businessId}/filings/${params.filingId}/revenue/export`}
-          className="rounded-md border border-slate-300 px-4 py-2 text-sm hover:bg-slate-100"
-        >
+      <Box sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 1.5, my: 3 }}>
+        <Button variant="outlined" component="a" href={`/api/businesses/${businessId}/filings/${params.filingId}/revenue/export`}>
           Download CSV
-        </a>
-        <label className="rounded-md border border-slate-300 px-4 py-2 text-sm hover:bg-slate-100 cursor-pointer">
+        </Button>
+        <Button variant="outlined" component="label" sx={{ minHeight: 48 }}>
           Re-upload CSV
-          <input
-            ref={importInputRef}
-            type="file"
-            accept=".csv"
-            className="hidden"
-            onChange={handleImport}
-          />
-        </label>
-        {importSummary && <span className="text-sm text-slate-600">{importSummary}</span>}
-      </section>
+          <input ref={importInputRef} type="file" accept=".csv" hidden onChange={handleImport} />
+        </Button>
+        {importSummary && (
+          <Typography variant="body2" color="text.secondary">
+            {importSummary}
+          </Typography>
+        )}
+      </Box>
 
-      {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+      {error && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
 
-      <div className="mb-8 overflow-x-auto rounded-md border border-slate-200">
-        <table className="w-full text-sm">
-          <thead className="bg-slate-50 text-left">
-            <tr>
-              <th className="px-3 py-2">Date</th>
-              <th className="px-3 py-2">Amount</th>
-              <th className="px-3 py-2">Counterparty / memo</th>
-              <th className="px-3 py-2">Customer</th>
-              <th className="px-3 py-2">Status</th>
-              <th className="px-3 py-2">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
+      <Box sx={{ overflowX: "auto", mb: 4 }}>
+        <Table size="small">
+          <TableHead>
+            <TableRow>
+              <TableCell>Date</TableCell>
+              <TableCell>Amount</TableCell>
+              <TableCell>Counterparty / memo</TableCell>
+              <TableCell>Customer</TableCell>
+              <TableCell>Status</TableCell>
+              <TableCell>Actions</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
             {entries.length === 0 && (
-              <tr>
-                <td colSpan={6} className="px-3 py-4 text-slate-500">
-                  No entries yet
-                </td>
-              </tr>
+              <TableRow>
+                <TableCell colSpan={6}>
+                  <Typography variant="body2" color="text.secondary">
+                    No entries yet
+                  </Typography>
+                </TableCell>
+              </TableRow>
             )}
             {entries.map((entry) => (
               <EntryRow
@@ -221,48 +240,45 @@ export default function RevenueEntriesPage() {
                 onViewInvoice={() => viewInvoice(entry)}
               />
             ))}
-          </tbody>
-        </table>
-      </div>
+          </TableBody>
+        </Table>
+      </Box>
 
-      <h2 className="mb-2 font-medium">Add an entry manually</h2>
-      <form onSubmit={handleAddEntry} className="flex flex-wrap gap-3">
-        <input
+      <Typography variant="h6" component="h2" sx={{ mb: 1 }}>
+        Add an entry manually
+      </Typography>
+      <Box component="form" onSubmit={handleAddEntry} sx={{ display: "flex", flexWrap: "wrap", gap: 1.5 }}>
+        <TextField
           type="date"
-          className="rounded-md border border-slate-300 px-3 py-2"
           value={txDate}
           onChange={(e) => setTxDate(e.target.value)}
           required
         />
-        <input
+        <TextField
           type="number"
-          step="0.01"
+          slotProps={{ htmlInput: { step: "0.01" } }}
           placeholder="Amount"
-          className="w-32 rounded-md border border-slate-300 px-3 py-2"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
           required
+          sx={{ width: 128 }}
         />
-        <input
+        <TextField
           placeholder="Counterparty (payer name)"
-          className="rounded-md border border-slate-300 px-3 py-2"
           value={counterparty}
           onChange={(e) => setCounterparty(e.target.value)}
         />
-        <input
+        <TextField
           placeholder="Memo / description"
-          className="flex-1 rounded-md border border-slate-300 px-3 py-2"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
+          sx={{ flexGrow: 1 }}
         />
-        <button
-          type="submit"
-          className="rounded-md bg-slate-900 px-4 py-2 text-sm text-white hover:bg-slate-700"
-        >
+        <Button type="submit" variant="contained" sx={{ minHeight: 48 }}>
           Add
-        </button>
-      </form>
-    </main>
+        </Button>
+      </Box>
+    </Container>
   );
 }
 
@@ -294,156 +310,158 @@ function EntryRow({
   }
 
   return (
-    <tr className="border-t border-slate-100 align-top">
-      <td className="px-3 py-2 whitespace-nowrap">
+    <TableRow sx={{ verticalAlign: "top" }}>
+      <TableCell sx={{ whiteSpace: "nowrap" }}>
         {new Date(entry.transactionDate).toLocaleDateString()}
-      </td>
-      <td className="px-3 py-2 whitespace-nowrap">
+      </TableCell>
+      <TableCell sx={{ whiteSpace: "nowrap" }}>
         {entry.amount.toFixed(2)} {entry.currency}
-      </td>
-      <td className="px-3 py-2">
-        <p>{entry.counterpartyNameRaw}</p>
-        <p className="text-xs text-slate-500">{entry.description}</p>
+      </TableCell>
+      <TableCell>
+        <Typography variant="body2">{entry.counterpartyNameRaw}</Typography>
+        <Typography variant="caption" color="text.secondary">
+          {entry.description}
+        </Typography>
         {entry.suggestedNoInvoiceReason && entry.status === "NEEDS_INVOICE" && (
-          <p className="mt-1 text-xs text-amber-700">
+          <Typography variant="caption" color="warning.dark" sx={{ mt: 0.5, display: "block" }}>
             AI suggests: {entry.suggestedNoInvoiceReason} — unconfirmed
-          </p>
+          </Typography>
         )}
-      </td>
-      <td className="px-3 py-2 min-w-[220px]">
+      </TableCell>
+      <TableCell sx={{ minWidth: 220 }}>
         {editing ? (
-          <div className="flex flex-col gap-1">
-            <input
-              className="rounded border border-slate-300 px-2 py-1 text-xs"
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+            <TextField
+              size="small"
               placeholder="Customer name"
               value={customerName}
               onChange={(e) => setCustomerName(e.target.value)}
             />
-            <input
-              className="rounded border border-slate-300 px-2 py-1 text-xs"
+            <TextField
+              size="small"
               placeholder="Registry code"
               value={customerRegistryCode}
               onChange={(e) => setCustomerRegistryCode(e.target.value)}
             />
-            <input
-              className="rounded border border-slate-300 px-2 py-1 text-xs"
+            <TextField
+              size="small"
               placeholder="VAT number"
               value={customerVatNumber}
               onChange={(e) => setCustomerVatNumber(e.target.value)}
             />
-            <input
-              className="rounded border border-slate-300 px-2 py-1 text-xs"
+            <TextField
+              size="small"
               placeholder="Address"
               value={customerAddress}
               onChange={(e) => setCustomerAddress(e.target.value)}
             />
-            <input
-              className="rounded border border-slate-300 px-2 py-1 text-xs"
+            <TextField
+              size="small"
               placeholder="Email"
               value={customerEmail}
               onChange={(e) => setCustomerEmail(e.target.value)}
             />
-            <div className="flex gap-2">
-              <button onClick={saveCustomer} className="text-xs text-slate-900 underline">
+            <Box sx={{ display: "flex", gap: 1 }}>
+              <Button size="small" onClick={saveCustomer}>
                 Save
-              </button>
-              <button onClick={() => setEditing(false)} className="text-xs text-slate-500 underline">
+              </Button>
+              <Button size="small" color="inherit" onClick={() => setEditing(false)}>
                 Cancel
-              </button>
-            </div>
-          </div>
+              </Button>
+            </Box>
+          </Box>
         ) : entry.customerName ? (
-          <div>
-            <p>{entry.customerName}</p>
-            <button onClick={() => setEditing(true)} className="text-xs text-slate-500 underline">
+          <Box>
+            <Typography variant="body2">{entry.customerName}</Typography>
+            <Button size="small" color="inherit" onClick={() => setEditing(true)}>
               Edit
-            </button>
-          </div>
+            </Button>
+          </Box>
         ) : (
-          <button onClick={() => setEditing(true)} className="text-xs text-slate-900 underline">
+          <Button size="small" onClick={() => setEditing(true)}>
             + Add customer details
-          </button>
+          </Button>
         )}
-      </td>
-      <td className="px-3 py-2 whitespace-nowrap">
+      </TableCell>
+      <TableCell sx={{ whiteSpace: "nowrap" }}>
         {entry.status === "INVOICE_GENERATED" ? (
-          <span className="text-emerald-700">{entry.invoiceNumber}</span>
+          <Chip size="small" color="success" label={entry.invoiceNumber} />
         ) : entry.status === "NO_INVOICE_NEEDED" ? (
-          <span className="text-slate-500" title={entry.noInvoiceReason ?? ""}>
-            No invoice needed
-          </span>
+          <Chip size="small" label="No invoice needed" title={entry.noInvoiceReason ?? ""} />
         ) : (
-          <span className="text-amber-700">Needs invoice</span>
+          <Chip size="small" color="warning" label="Needs invoice" />
         )}
-      </td>
-      <td className="px-3 py-2 whitespace-nowrap">
+      </TableCell>
+      <TableCell sx={{ whiteSpace: "nowrap" }}>
         {entry.status === "INVOICE_GENERATED" && (
-          <button onClick={onViewInvoice} className="text-xs text-slate-900 underline">
+          <Button size="small" onClick={onViewInvoice}>
             View invoice
-          </button>
+          </Button>
         )}
         {entry.status === "NEEDS_INVOICE" && (
-          <div className="flex flex-col gap-1">
-            <div className="flex gap-1">
-              <select
-                className="rounded border border-slate-300 px-1 py-0.5 text-xs"
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
+            <Box sx={{ display: "flex", gap: 0.5 }}>
+              <Select
+                size="small"
                 value={templateId}
                 onChange={(e) => setTemplateId(e.target.value)}
               >
-                {templates.length === 0 && <option value="">No templates</option>}
+                {templates.length === 0 && <MenuItem value="">No templates</MenuItem>}
                 {templates.map((t) => (
-                  <option key={t.id} value={t.id}>
+                  <MenuItem key={t.id} value={t.id}>
                     {t.name}
-                  </option>
+                  </MenuItem>
                 ))}
-              </select>
-              <button
+              </Select>
+              <Button
+                size="small"
+                variant="contained"
                 onClick={() => onGenerate(templateId)}
                 disabled={!entry.customerName || !templateId}
-                className="rounded bg-slate-900 px-2 py-0.5 text-xs text-white disabled:opacity-40"
               >
                 Generate
-              </button>
-            </div>
+              </Button>
+            </Box>
             {entry.suggestedNoInvoiceReason && (
-              <button
+              <Button
+                size="small"
+                variant="outlined"
+                color="warning"
                 onClick={() =>
                   onUpdate({ status: "NO_INVOICE_NEEDED", noInvoiceReason: entry.suggestedNoInvoiceReason })
                 }
-                className="rounded border border-amber-300 bg-amber-50 px-2 py-0.5 text-left text-xs text-amber-900 hover:bg-amber-100"
                 title="Accept the AI's suggested reason as-is"
+                sx={{ justifyContent: "flex-start", textAlign: "left" }}
               >
                 ✓ Accept AI suggestion: {entry.suggestedNoInvoiceReason}
-              </button>
+              </Button>
             )}
-            <div className="flex gap-1">
-              <input
-                className="rounded border border-slate-300 px-1 py-0.5 text-xs"
+            <Box sx={{ display: "flex", gap: 0.5 }}>
+              <TextField
+                size="small"
                 placeholder={
                   entry.suggestedNoInvoiceReason ? "...or a different reason" : "Reason (e.g. own transfer)"
                 }
                 value={noInvoiceReason}
                 onChange={(e) => setNoInvoiceReason(e.target.value)}
               />
-              <button
+              <Button
+                size="small"
+                variant="outlined"
                 onClick={() => onUpdate({ status: "NO_INVOICE_NEEDED", noInvoiceReason })}
                 disabled={!noInvoiceReason}
-                className="rounded border border-slate-300 px-2 py-0.5 text-xs disabled:opacity-40"
               >
                 No invoice needed
-              </button>
-            </div>
-          </div>
+              </Button>
+            </Box>
+          </Box>
         )}
         {entry.status === "NO_INVOICE_NEEDED" && (
-          <button
-            onClick={() => onUpdate({ status: "NEEDS_INVOICE" })}
-            className="text-xs text-slate-500 underline"
-          >
+          <Button size="small" color="inherit" onClick={() => onUpdate({ status: "NEEDS_INVOICE" })}>
             Reopen
-          </button>
+          </Button>
         )}
-      </td>
-    </tr>
+      </TableCell>
+    </TableRow>
   );
 }

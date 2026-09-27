@@ -3,6 +3,17 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { businesses, memberships } from "@/lib/db";
+import Container from "@mui/material/Container";
+import Box from "@mui/material/Box";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+import Typography from "@mui/material/Typography";
+import Button from "@mui/material/Button";
+import List from "@mui/material/List";
+import ListItem from "@mui/material/ListItem";
+import ListItemButton from "@mui/material/ListItemButton";
+import ListItemText from "@mui/material/ListItemText";
+import Chip from "@mui/material/Chip";
 
 export default async function BusinessesPage() {
   const session = await getServerSession(authOptions);
@@ -15,43 +26,42 @@ export default async function BusinessesPage() {
   );
 
   return (
-    <main className="mx-auto max-w-2xl px-4 py-16">
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Your businesses</h1>
-        <Link
-          href="/businesses/new"
-          className="rounded-md bg-slate-900 px-4 py-2 text-sm text-white hover:bg-slate-700"
-        >
+    <Container maxWidth="md" sx={{ py: 8 }}>
+      <Box sx={{ display: "flex", gap: 2, justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", mb: 3 }}>
+        <Typography variant="h4" component="h1">
+          Your businesses
+        </Typography>
+        <Button component={Link} href="/businesses/new" variant="contained">
           + New business
-        </Link>
-      </div>
+        </Button>
+      </Box>
 
       {withRoles.length === 0 ? (
-        <p className="text-sm text-slate-600">
-          You&apos;re not part of any business yet.{" "}
-          <Link href="/businesses/new" className="underline">
-            Create one
-          </Link>
-          .
-        </p>
+        <Card>
+          <CardContent>
+            <Typography variant="body2" color="text.secondary">
+              You&apos;re not part of any business yet.{" "}
+              <Typography component={Link} href="/businesses/new" variant="body2" color="primary">
+                Create one
+              </Typography>
+              .
+            </Typography>
+          </CardContent>
+        </Card>
       ) : (
-        <ul className="divide-y divide-slate-200 rounded-md border border-slate-200">
-          {withRoles.map((b) => (
-            <li key={b.id}>
-              <Link
-                href={`/businesses/${b.id}`}
-                className="flex items-center justify-between px-4 py-3 hover:bg-slate-100"
-              >
-                <div>
-                  <p className="font-medium">{b.name}</p>
-                  <p className="text-xs text-slate-500">{b.country}</p>
-                </div>
-                <span className="text-sm text-slate-500">{b.role}</span>
-              </Link>
-            </li>
-          ))}
-        </ul>
+        <Card>
+          <List disablePadding>
+            {withRoles.map((b) => (
+              <ListItem key={b.id} disablePadding divider>
+                <ListItemButton component={Link} href={`/businesses/${b.id}`}>
+                  <ListItemText primary={b.name} secondary={b.country} />
+                  {b.role && <Chip label={b.role} size="small" variant="outlined" />}
+                </ListItemButton>
+              </ListItem>
+            ))}
+          </List>
+        </Card>
       )}
-    </main>
+    </Container>
   );
 }

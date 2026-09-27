@@ -2,6 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Container from "@mui/material/Container";
+import Box from "@mui/material/Box";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+import Typography from "@mui/material/Typography";
+import TextField from "@mui/material/TextField";
+import Button from "@mui/material/Button";
+import Alert from "@mui/material/Alert";
 
 export default function NewBusinessPage() {
   const router = useRouter();
@@ -32,40 +40,42 @@ export default function NewBusinessPage() {
   }
 
   return (
-    <main className="mx-auto max-w-sm px-4 py-16">
-      <h1 className="mb-2 text-2xl font-semibold">Create your business</h1>
-      <p className="mb-6 text-sm text-slate-600">
-        You&apos;ll be able to invite your team and accountant next.
-      </p>
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <input
-          className="rounded-md border border-slate-300 px-3 py-2"
-          placeholder="Business name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          required
-        />
-        <input
-          className="rounded-md border border-slate-300 px-3 py-2"
-          placeholder="Registry code (Ariregister) — optional"
-          value={registryCode}
-          onChange={(e) => setRegistryCode(e.target.value)}
-        />
-        <input
-          className="rounded-md border border-slate-300 px-3 py-2"
-          placeholder="VAT number — optional"
-          value={vatNumber}
-          onChange={(e) => setVatNumber(e.target.value)}
-        />
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        <button
-          type="submit"
-          disabled={loading}
-          className="rounded-md bg-slate-900 px-4 py-2 text-white hover:bg-slate-700 disabled:opacity-50"
-        >
-          {loading ? "Creating..." : "Create business"}
-        </button>
-      </form>
-    </main>
+    <Container maxWidth="sm" sx={{ py: 8 }}>
+      <Card>
+        <CardContent sx={{ p: 4 }}>
+          <Typography variant="h4" component="h1" gutterBottom>
+            Create your business
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+            You&apos;ll be able to invite your team and accountant next.
+          </Typography>
+          <Box component="form" onSubmit={handleSubmit} sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <TextField
+              label="Business name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              fullWidth
+            />
+            <TextField
+              label="Registry code (Ariregister) — optional"
+              value={registryCode}
+              onChange={(e) => setRegistryCode(e.target.value)}
+              fullWidth
+            />
+            <TextField
+              label="VAT number — optional"
+              value={vatNumber}
+              onChange={(e) => setVatNumber(e.target.value)}
+              fullWidth
+            />
+            {error && <Alert severity="error">{error}</Alert>}
+            <Button type="submit" disabled={loading} variant="contained" fullWidth>
+              {loading ? "Creating..." : "Create business"}
+            </Button>
+          </Box>
+        </CardContent>
+      </Card>
+    </Container>
   );
 }

@@ -4,6 +4,12 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { businesses } from "@/lib/db";
 import { getMembership } from "@/lib/permissions";
+import Container from "@mui/material/Container";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import Button from "@mui/material/Button";
+import Chip from "@mui/material/Chip";
+import Divider from "@mui/material/Divider";
 
 export default async function BusinessLayout({
   children,
@@ -33,28 +39,31 @@ export default async function BusinessLayout({
   ];
 
   return (
-    <div>
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-2 px-4 py-3">
-          <div className="flex items-center gap-3">
-            <Link href="/businesses" className="text-sm text-slate-500 hover:underline">
-              ← Switch business
-            </Link>
-            <span className="font-medium">{business.name}</span>
-            <span className="rounded bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
-              {membership.role}
-            </span>
-          </div>
-          <nav className="flex flex-wrap gap-4 text-sm">
-            {navItems.map((item) => (
-              <Link key={item.href} href={item.href} className="text-slate-600 hover:text-slate-900">
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-        </div>
-      </header>
+    <Box>
+      <Box component="header" sx={{ borderBottom: 1, borderColor: "divider", bgcolor: "background.default" }}>
+        <Container maxWidth="md" sx={{ py: 1.5 }}>
+          <Box sx={{ display: "flex", gap: 1.5, justifyContent: "space-between", flexWrap: "wrap", alignItems: "center" }}>
+            <Box sx={{ display: "flex", gap: 1.5, alignItems: "center", flexWrap: "wrap" }}>
+              <Button component={Link} href="/businesses" size="small" variant="text">
+                ← Switch business
+              </Button>
+              <Typography variant="subtitle1" component="span" sx={{ fontWeight: 600 }}>
+                {business.name}
+              </Typography>
+              <Chip label={membership.role} size="small" variant="outlined" />
+            </Box>
+            <Box component="nav" sx={{ display: "flex", gap: 0.5, flexWrap: "wrap" }}>
+              {navItems.map((item) => (
+                <Button key={item.href} component={Link} href={item.href} size="small" variant="text" color="inherit">
+                  {item.label}
+                </Button>
+              ))}
+            </Box>
+          </Box>
+        </Container>
+        <Divider />
+      </Box>
       {children}
-    </div>
+    </Box>
   );
 }

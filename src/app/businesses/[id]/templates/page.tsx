@@ -2,6 +2,17 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
+import Container from "@mui/material/Container";
+import Box from "@mui/material/Box";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+import Typography from "@mui/material/Typography";
+import TextField from "@mui/material/TextField";
+import Button from "@mui/material/Button";
+import Alert from "@mui/material/Alert";
+import List from "@mui/material/List";
+import ListItem from "@mui/material/ListItem";
+import ListItemText from "@mui/material/ListItemText";
 
 type Template = { id: string; name: string; html: string; createdAt: string };
 
@@ -50,74 +61,97 @@ export default function TemplatesPage() {
   }
 
   return (
-    <main className="mx-auto max-w-2xl px-4 py-16">
-      <h1 className="mb-2 text-2xl font-semibold">Invoice templates</h1>
-      <p className="mb-6 text-sm text-slate-600">
+    <Container maxWidth="md" sx={{ py: 8 }}>
+      <Typography variant="h4" component="h1" gutterBottom>
+        Invoice templates
+      </Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
         Upload your existing invoice design as HTML. Use{" "}
         <code>{"{{customerName}}"}</code>, <code>{"{{amount}}"}</code>,{" "}
         <code>{"{{invoiceNumber}}"}</code>, etc. as placeholders — the system
         fills those in when generating an invoice for a revenue entry. Any
         other markup/styling in the file is kept as-is.
-      </p>
+      </Typography>
 
-      <ul className="mb-8 divide-y divide-slate-200 rounded-md border border-slate-200">
-        {templates.length === 0 && (
-          <li className="px-4 py-3 text-sm text-slate-500">No templates yet</li>
-        )}
-        {templates.map((t) => (
-          <li key={t.id} className="flex items-center justify-between px-4 py-3">
-            <span className="text-sm font-medium">{t.name}</span>
-            <button
-              onClick={() => setPreview(t.html)}
-              className="text-sm text-slate-600 underline hover:text-slate-900"
+      <Card sx={{ mb: 3 }}>
+        <List disablePadding>
+          {templates.length === 0 && (
+            <ListItem>
+              <ListItemText
+                primary="No templates yet"
+                slotProps={{ primary: { variant: "body2", color: "text.secondary" } }}
+              />
+            </ListItem>
+          )}
+          {templates.map((t) => (
+            <ListItem
+              key={t.id}
+              divider
+              secondaryAction={
+                <Button size="small" variant="text" onClick={() => setPreview(t.html)}>
+                  Preview
+                </Button>
+              }
             >
-              Preview
-            </button>
-          </li>
-        ))}
-      </ul>
+              <ListItemText primary={t.name} slotProps={{ primary: { variant: "body2", sx: { fontWeight: 500 } } }} />
+            </ListItem>
+          ))}
+        </List>
+      </Card>
 
       {preview && (
-        <div className="mb-8">
-          <div className="mb-2 flex items-center justify-between">
-            <h2 className="font-medium">Template preview (raw tokens, unfilled)</h2>
-            <button onClick={() => setPreview(null)} className="text-sm text-slate-500 underline">
-              Close
-            </button>
-          </div>
-          <iframe
-            className="h-64 w-full rounded-md border border-slate-200 bg-white"
-            srcDoc={preview}
-            sandbox=""
-          />
-        </div>
+        <Card sx={{ mb: 3 }}>
+          <CardContent>
+            <Box sx={{ display: "flex", gap: 1, justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+              <Typography variant="h6" component="h2">
+                Template preview (raw tokens, unfilled)
+              </Typography>
+              <Button size="small" variant="text" onClick={() => setPreview(null)}>
+                Close
+              </Button>
+            </Box>
+            <Box
+              component="iframe"
+              srcDoc={preview}
+              sandbox=""
+              title="Template preview"
+              sx={{ height: 256, width: "100%", border: 1, borderColor: "divider", borderRadius: 1, bgcolor: "#fff" }}
+            />
+          </CardContent>
+        </Card>
       )}
 
-      <h2 className="mb-2 font-medium">Add a template</h2>
-      <form onSubmit={handleSave} className="flex flex-col gap-3">
-        <input
-          className="rounded-md border border-slate-300 px-3 py-2"
-          placeholder="Template name, e.g. Standard sales invoice"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          required
-        />
-        <input ref={fileInputRef} type="file" accept=".html,.htm" onChange={handleFileChange} />
-        <textarea
-          className="min-h-[160px] rounded-md border border-slate-300 px-3 py-2 font-mono text-xs"
-          placeholder="...or paste HTML directly"
-          value={html}
-          onChange={(e) => setHtml(e.target.value)}
-          required
-        />
-        {error && <p className="text-sm text-red-600">{error}</p>}
-        <button
-          type="submit"
-          className="self-start rounded-md bg-slate-900 px-4 py-2 text-sm text-white hover:bg-slate-700"
-        >
-          Save template
-        </button>
-      </form>
-    </main>
+      <Card>
+        <CardContent>
+          <Typography variant="h6" component="h2" sx={{ mb: 2 }}>
+            Add a template
+          </Typography>
+          <Box component="form" onSubmit={handleSave} sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            <TextField
+              label="Template name, e.g. Standard sales invoice"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              fullWidth
+            />
+            <input ref={fileInputRef} type="file" accept=".html,.htm" onChange={handleFileChange} />
+            <TextField
+              label="...or paste HTML directly"
+              value={html}
+              onChange={(e) => setHtml(e.target.value)}
+              required
+              fullWidth
+              multiline
+              minRows={6}
+              slotProps={{ htmlInput: { style: { fontFamily: "monospace", fontSize: 12 } } }}
+            />
+            {error && <Alert severity="error">{error}</Alert>}
+            <Button type="submit" variant="contained" sx={{ alignSelf: "flex-start" }}>
+              Save template
+            </Button>
+          </Box>
+        </CardContent>
+      </Card>
+    </Container>
   );
 }

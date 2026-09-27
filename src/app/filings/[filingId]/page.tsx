@@ -5,6 +5,17 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { Disclaimer } from "@/components/Disclaimer";
 import { ComingSoonButton } from "@/components/ComingSoon";
+import Container from "@mui/material/Container";
+import Box from "@mui/material/Box";
+import Card from "@mui/material/Card";
+import CardContent from "@mui/material/CardContent";
+import Typography from "@mui/material/Typography";
+import Button from "@mui/material/Button";
+import TextField from "@mui/material/TextField";
+import Checkbox from "@mui/material/Checkbox";
+import FormControlLabel from "@mui/material/FormControlLabel";
+import Chip from "@mui/material/Chip";
+import Alert from "@mui/material/Alert";
 
 type Engagement = {
   id: string;
@@ -110,19 +121,21 @@ export default function FilingDetailPage() {
 
   if (notFound) {
     return (
-      <main className="mx-auto max-w-2xl px-4 py-16">
-        <p className="text-sm text-slate-600">
+      <Container maxWidth="md" sx={{ py: 8 }}>
+        <Typography variant="body2" color="text.secondary">
           This filing doesn&apos;t exist, or you don&apos;t have access to it.
-        </p>
-      </main>
+        </Typography>
+      </Container>
     );
   }
 
   if (!filing) {
     return (
-      <main className="mx-auto max-w-2xl px-4 py-16">
-        <p className="text-sm text-slate-500">Loading...</p>
-      </main>
+      <Container maxWidth="md" sx={{ py: 8 }}>
+        <Typography variant="body2" color="text.secondary">
+          Loading...
+        </Typography>
+      </Container>
     );
   }
 
@@ -130,60 +143,61 @@ export default function FilingDetailPage() {
   const canInviteEngagement = filing.accessRole === "OWNER" && !filing.viaEngagement;
 
   return (
-    <main className="mx-auto max-w-2xl px-4 py-16">
-      <p className="mb-1 text-sm text-slate-500">
-        <Link href={`/businesses/${filing.businessId}/filings`} className="hover:underline">
-          {filing.business.name}
-        </Link>{" "}
+    <Container maxWidth="md" sx={{ py: 8 }}>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 0.5 }}>
+        <Link href={`/businesses/${filing.businessId}/filings`}>{filing.business.name}</Link>{" "}
         · {filing.viaEngagement ? "engaged for this filing" : filing.accessRole}
-      </p>
-      <h1 className="mb-1 text-2xl font-semibold">{filing.label}</h1>
-      <p className="mb-4 text-sm text-slate-600">
+      </Typography>
+      <Typography variant="h4" component="h1" sx={{ mb: 0.5 }}>
+        {filing.label}
+      </Typography>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
         {filing.type} · {new Date(filing.periodStart).toLocaleDateString()} –{" "}
-        {new Date(filing.periodEnd).toLocaleDateString()} · Status: {filing.status}
-      </p>
+        {new Date(filing.periodEnd).toLocaleDateString()} · Status:{" "}
+        <Chip size="small" label={filing.status} component="span" />
+      </Typography>
 
-      <div className="mb-8 flex flex-wrap gap-3">
-        <Link
-          href={`/filings/${filing.id}/revenue`}
-          className="inline-block rounded-md border border-slate-300 px-4 py-2 text-sm hover:bg-slate-100"
-        >
+      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.5, mb: 4 }}>
+        <Button variant="outlined" component={Link} href={`/filings/${filing.id}/revenue`}>
           Revenue entries & missing invoices →
-        </Link>
-        <Link
-          href={`/filings/${filing.id}/reports`}
-          className="inline-block rounded-md border border-slate-300 px-4 py-2 text-sm hover:bg-slate-100"
-        >
+        </Button>
+        <Button variant="outlined" component={Link} href={`/filings/${filing.id}/reports`}>
           Reports — KMD & annual, fill for EMTA →
-        </Link>
-      </div>
+        </Button>
+      </Box>
 
-      <section className="mb-8">
-        <h2 className="mb-2 font-medium">Preview, download & file</h2>
+      <Box component="section" sx={{ mb: 4 }}>
+        <Typography variant="h6" component="h2" sx={{ mb: 1 }}>
+          Preview, download & file
+        </Typography>
 
-        <button
+        <Button
           type="button"
+          variant="outlined"
           onClick={() => setPreviewOpen((v) => !v)}
-          className="mb-4 rounded-md border border-slate-300 px-4 py-2 text-sm hover:bg-slate-100"
+          sx={{ mb: 2 }}
         >
           {previewOpen ? "Hide preview" : "Preview filing"}
-        </button>
+        </Button>
 
         {previewOpen && (
-          <div className="mb-4 rounded-md border border-slate-200 bg-slate-50 p-4 text-sm">
-            <p className="font-medium">{filing.label}</p>
-            <p className="text-slate-600">
-              {filing.type} filing for{" "}
-              {new Date(filing.periodStart).toLocaleDateString()} –{" "}
-              {new Date(filing.periodEnd).toLocaleDateString()}.
-            </p>
-            <p className="mt-2 text-xs text-slate-500">
-              This is a placeholder preview. The real KMD/annual-report data
-              package, drawn from reconciled bank transactions and categorized
-              documents, is on the roadmap (see PROPOSAL.md) and not yet
-              generated here.
-            </p>
-          </div>
+          <Card variant="outlined" sx={{ mb: 2, bgcolor: "grey.50" }}>
+            <CardContent>
+              <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                {filing.label}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {filing.type} filing for {new Date(filing.periodStart).toLocaleDateString()} –{" "}
+                {new Date(filing.periodEnd).toLocaleDateString()}.
+              </Typography>
+              <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: "block" }}>
+                This is a placeholder preview. The real KMD/annual-report data
+                package, drawn from reconciled bank transactions and categorized
+                documents, is on the roadmap (see PROPOSAL.md) and not yet
+                generated here.
+              </Typography>
+            </CardContent>
+          </Card>
         )}
 
         <Disclaimer>
@@ -193,101 +207,118 @@ export default function FilingDetailPage() {
           filed rests with the accountant who signs it.
         </Disclaimer>
 
-        <label className="mb-4 flex items-start gap-2 text-sm text-slate-700">
-          <input
-            type="checkbox"
-            className="mt-1"
-            checked={acknowledged}
-            onChange={(e) => setAcknowledged(e.target.checked)}
-          />
-          I acknowledge this and take responsibility for what&apos;s
-          downloaded or filed from here.
-        </label>
+        <FormControlLabel
+          control={
+            <Checkbox checked={acknowledged} onChange={(e) => setAcknowledged(e.target.checked)} />
+          }
+          label="I acknowledge this and take responsibility for what's downloaded or filed from here."
+          sx={{ mb: 2, mt: 1, alignItems: "flex-start" }}
+        />
 
-        <div className="flex flex-wrap gap-3">
-          <button
+        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1.5 }}>
+          <Button
             type="button"
+            variant="outlined"
             onClick={handleDownload}
             disabled={!acknowledged}
-            className="rounded-md border border-slate-300 px-4 py-2 text-sm hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+            sx={{ minHeight: 48 }}
           >
             Download filing package
-          </button>
+          </Button>
           {canManage && (
-            <button
+            <Button
               type="button"
+              variant="contained"
               onClick={() => handleStatusChange(filing.status === "FILED" ? "OPEN" : "FILED")}
               disabled={!acknowledged || statusUpdating}
-              className="rounded-md bg-slate-900 px-4 py-2 text-sm text-white hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40"
+              sx={{ minHeight: 48 }}
             >
               {filing.status === "FILED" ? "Reopen filing" : "Mark as filed (manual submission in EMTA/Ariregister)"}
-            </button>
+            </Button>
           )}
           <ComingSoonButton
             label="Auto-submit to EMTA (X-tee)"
             title="Direct EMTA/X-tee submission"
             description="Automated filing straight to EMTA via the X-tee data-exchange layer needs X-tee membership and certification. For now, use “Mark as filed” after submitting the downloaded package yourself in EMTA's portal — see PROPOSAL.md Phase 5."
           />
-        </div>
-      </section>
+        </Box>
+      </Box>
 
-      <section className="mb-8">
-        <h2 className="mb-2 font-medium">Accountants engaged on this filing</h2>
-        <ul className="divide-y divide-slate-200 rounded-md border border-slate-200">
-          {filing.engagements.length === 0 && (
-            <li className="px-4 py-2 text-sm text-slate-500">None yet</li>
-          )}
-          {filing.engagements.map((e) => (
-            <li key={e.id} className="flex justify-between px-4 py-2 text-sm">
-              <span>{e.accountant?.name ?? e.email}</span>
-              <span className="text-slate-500">{e.status}</span>
-            </li>
-          ))}
-        </ul>
-        <p className="mt-2 text-xs text-slate-500">
+      <Box component="section" sx={{ mb: 4 }}>
+        <Typography variant="h6" component="h2" sx={{ mb: 1 }}>
+          Accountants engaged on this filing
+        </Typography>
+        <Card variant="outlined">
+          <CardContent sx={{ p: 0, "&:last-child": { pb: 0 } }}>
+            {filing.engagements.length === 0 && (
+              <Typography variant="body2" color="text.secondary" sx={{ px: 2, py: 1 }}>
+                None yet
+              </Typography>
+            )}
+            {filing.engagements.map((e, i) => (
+              <Box
+                key={e.id}
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  px: 2,
+                  py: 1,
+                  borderTop: i === 0 ? "none" : "1px solid",
+                  borderColor: "divider",
+                }}
+              >
+                <Typography variant="body2">{e.accountant?.name ?? e.email}</Typography>
+                <Chip size="small" label={e.status} />
+              </Box>
+            ))}
+          </CardContent>
+        </Card>
+        <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: "block" }}>
           This grants access to only this filing period — not standing team
           membership. For an ongoing accountant relationship, invite them from
           the business&apos;s Team page instead.
-        </p>
-      </section>
+        </Typography>
+      </Box>
 
       {canInviteEngagement && (
-        <section className="mb-8">
-          <h2 className="mb-2 font-medium">Engage an accountant for this filing</h2>
-          <form onSubmit={handleInvite} className="flex gap-3">
-            <input
-              className="flex-1 rounded-md border border-slate-300 px-3 py-2"
+        <Box component="section" sx={{ mb: 4 }}>
+          <Typography variant="h6" component="h2" sx={{ mb: 1 }}>
+            Engage an accountant for this filing
+          </Typography>
+          <Box component="form" onSubmit={handleInvite} sx={{ display: "flex", gap: 1.5 }}>
+            <TextField
+              fullWidth
               placeholder="Email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
             />
-            <button
-              type="submit"
-              className="rounded-md bg-slate-900 px-4 py-2 text-white hover:bg-slate-700"
-            >
+            <Button type="submit" variant="contained" sx={{ minHeight: 48 }}>
               Send
-            </button>
-          </form>
-          {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
-          {lastEngagementLink && (
-            <p className="mt-3 break-all text-xs text-slate-500">
-              Engagement link (share manually until email sending is wired up):{" "}
-              <a className="underline" href={lastEngagementLink}>
-                {lastEngagementLink}
-              </a>
-            </p>
+            </Button>
+          </Box>
+          {error && (
+            <Alert severity="error" sx={{ mt: 1 }}>
+              {error}
+            </Alert>
           )}
-        </section>
+          {lastEngagementLink && (
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 1.5, wordBreak: "break-all", display: "block" }}>
+              Engagement link (share manually until email sending is wired up):{" "}
+              <a href={lastEngagementLink}>{lastEngagementLink}</a>
+            </Typography>
+          )}
+        </Box>
       )}
 
       {!canManage && (
-        <p className="text-sm text-slate-500">
+        <Typography variant="body2" color="text.secondary">
           You have view access to this filing but not the role needed to
           manage it.
-        </p>
+        </Typography>
       )}
-    </main>
+    </Container>
   );
 }
