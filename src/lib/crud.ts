@@ -160,12 +160,19 @@ export async function fileDelete(fileId: string): Promise<void> {
 }
 
 // ---- Server-side AI (Meta Spark via the backend; null = unavailable) ----
-export async function aiComplete(prompt: string, system?: string): Promise<string | null> {
+export type AiAttachment = { mimeType?: string; fileName?: string; dataBase64: string };
+export async function aiComplete(
+  prompt: string,
+  system?: string,
+  attachments?: { images?: AiAttachment[]; files?: AiAttachment[] }
+): Promise<string | null> {
   try {
     const res = await fetch(`${BASE}/api/ai/${APP_ID}`, {
       method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(system ? { prompt, system } : { prompt }),
+      headers: { "content-type": "application/json", ...authHeaders() },
+      body: JSON.stringify(
+        system || attachments ? { prompt, system, ...attachments } : { prompt }
+      ),
     });
     if (!res.ok) return null; // 503 no key, 502 upstream down → caller falls back
     const json = (await res.json()) as { text?: string };
