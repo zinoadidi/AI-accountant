@@ -27,3 +27,6 @@ export type PricingMode = (typeof PRICING_MODES)[number];
 
 export const REVENUE_ENTRY_STATUSES = ["NEEDS_INVOICE", "NO_INVOICE_NEEDED", "INVOICE_GENERATED"] as const;
 export type RevenueEntryStatus = (typeof REVENUE_ENTRY_STATUSES)[number];
+
+export const REQUEST_STATUSES = ["REQUESTED", "SENT", "RECEIVED"] as const;
+export type RequestStatus = (typeof REQUEST_STATUSES)[number];

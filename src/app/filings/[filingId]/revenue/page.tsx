@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { Disclaimer } from "@/components/Disclaimer";
+import { ComingSoonButton } from "@/components/ComingSoon";
 import Container from "@mui/material/Container";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
@@ -195,6 +196,11 @@ export default function RevenueEntriesPage() {
           Re-upload CSV
           <input ref={importInputRef} type="file" accept=".csv" hidden onChange={handleImport} />
         </Button>
+        <ComingSoonButton
+          label="Send via external invoice system"
+          title="External invoice-system sync"
+          description="Sending generated invoices through an external invoicing system isn't wired up yet. Download or copy the generated invoice from the table below and send it yourself in the meantime."
+        />
         {importSummary && (
           <Typography variant="body2" color="text.secondary">
             {importSummary}
