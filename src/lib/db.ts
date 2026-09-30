@@ -161,6 +161,17 @@ export type StatementDoc = {
   transactions: StatementTx[];
   createdAt: string;
 };
+export type RequestDoc = {
+  kind: "request";
+  businessId: string;
+  filingPeriodId: string | null;
+  counterparty: string;
+  amount: number | null;
+  currency: string | null;
+  status: string; // REQUESTED | SENT | RECEIVED
+  notes: string | null;
+  createdAt: string;
+};
 
 export type DocOf = {
   user: UserDoc;
@@ -173,6 +184,7 @@ export type DocOf = {
   template: TemplateDoc;
   revenue: RevenueDoc;
   statement: StatementDoc;
+  request: RequestDoc;
   reset: ResetDoc;
 };
 export type Kind = keyof DocOf;
@@ -606,3 +618,39 @@ export async function updateDoc<K extends Kind>(kind: K, id: string, patch: Part
   )) as unknown as DocOf[K];
   return { ...next, id };
 }
+
+// ---- Invoice requests (manual control center for missing invoices) ----
+export const requests = {
+  byBusiness: (businessId: string) => allByBusiness("request", businessId),
+  get: (id: string) => get("request", id),
+  async forFiling(filingPeriodId: string) {
+    const all = await allByKind("request");
+    return all.filter((r) => r.filingPeriodId === filingPeriodId);
+  },
+  async create(data: {
+    businessId: string;
+    filingPeriodId?: string | null;
+    counterparty: string;
+    amount?: number | null;
+    currency?: string | null;
+    notes?: string | null;
+  }) {
+    const id = uid();
+    const doc: RequestDoc = {
+      kind: "request",
+      businessId: data.businessId,
+      filingPeriodId: data.filingPeriodId ?? null,
+      counterparty: data.counterparty,
+      amount: data.amount ?? null,
+      currency: data.currency ?? null,
+      status: "REQUESTED",
+      notes: data.notes ?? null,
+      createdAt: now(),
+    };
+    await storeCreate(doc as unknown as Record<string, unknown>, id);
+    return { ...doc, id };
+  },
+  async remove(id: string) {
+    await storeDelete(id);
+  },
+};

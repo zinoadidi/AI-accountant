@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
+import { ComingSoonButton } from "@/components/ComingSoon";
 import Container from "@mui/material/Container";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
@@ -72,6 +73,14 @@ export default function TemplatesPage() {
         fills those in when generating an invoice for a revenue entry. Any
         other markup/styling in the file is kept as-is.
       </Typography>
+
+      <Box sx={{ mb: 3 }}>
+        <ComingSoonButton
+          label="Sync with external invoice system"
+          title="External invoice-system sync"
+          description="Two-way sync with an external invoicing tool (e.g. your existing e-invoicing provider) isn't built yet. Generating from the templates on this page is the working path — see PROPOSAL.md."
+        />
+      </Box>
 
       <Card sx={{ mb: 3 }}>
         <List disablePadding>

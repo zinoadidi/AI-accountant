@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { ComingSoonButton } from "@/components/ComingSoon";
 import Container from "@mui/material/Container";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
@@ -124,6 +125,14 @@ export default function StatementsPage() {
         Upload a bank CSV, pick a filing period, and reconcile it against your
         documents and revenue.
       </Typography>
+
+      <Box sx={{ mb: 2 }}>
+        <ComingSoonButton
+          label="Connect bank automatically (live sync)"
+          title="Live bank connection"
+          description="Automatic transaction sync via an open-banking aggregator (e.g. GoCardless/Nordigen, LHV first) isn't connected yet. Until then, uploading a CSV statement below is the working path — see PROPOSAL.md Phase 1."
+        />
+      </Box>
 
       <Button
         variant="outlined"
