@@ -221,10 +221,21 @@ export const users = {
     if (!u) return null;
     return put("user", id, { ...u, passwordHash });
   },
+  async setEmail(id: string, email: string) {
+    const u = await get("user", id);
+    if (!u) return null;
+    return put("user", id, { ...u, email: email.toLowerCase() });
+  },
+  async all() {
+    return allByKind("user");
+  },
 };
 
 // ---- Businesses ----
 export const businesses = {
+  async all() {
+    return allByKind("business");
+  },
   async create(data: { name: string; registryCode?: string; vatNumber?: string; country?: string; currency?: string }) {
     const id = uid();
     const doc: BusinessDoc = {
@@ -260,6 +271,9 @@ export const businesses = {
 
 // ---- Memberships ----
 export const memberships = {
+  async all() {
+    return allByKind("membership");
+  },
   async get(userId: string, businessId: string) {
     const all = await allByKind("membership");
     return all.find((m) => m.userId === userId && m.businessId === businessId) ?? null;
