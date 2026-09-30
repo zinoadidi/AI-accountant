@@ -1,0 +1,12 @@
+node_modules
+.next
+.git
+.github
+.env
+.env.local
+*.db
+*.db-journal
+.uploads
+example_company_data_zinospot/
+Dockerfile
+.dockerignore

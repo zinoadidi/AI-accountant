@@ -6,19 +6,31 @@
 // Env:
 //   CRUD_BASE_URL  e.g. http://127.0.0.1:3531/generic-crud
 //   CRUD_APP_ID    uuid namespacing this deployment's data (has a dev default)
+//   CRUD_APP_TOKEN passphrase for the backend's per-app lock (optional —
+//                  only needed once the namespace is locked; unlocked
+//                  namespaces ignore it). Sent as `x-app-token`.
 
 const BASE = (process.env.CRUD_BASE_URL ?? "http://127.0.0.1:3531/generic-crud").replace(/\/+$/, "");
 const APP_ID =
   process.env.CRUD_APP_ID ?? "00000000-0000-4000-8000-000000000001";
+const APP_TOKEN = process.env.CRUD_APP_TOKEN ?? "";
 
 export function crudConfig() {
-  return { base: BASE, appId: APP_ID };
+  return { base: BASE, appId: APP_ID, hasToken: APP_TOKEN.length > 0 };
+}
+
+function authHeaders(): Record<string, string> {
+  return APP_TOKEN ? { "x-app-token": APP_TOKEN } : {};
 }
 
 async function req(path: string, init?: RequestInit) {
   const res = await fetch(`${BASE}${path}`, {
     ...init,
-    headers: { "content-type": "application/json", ...(init?.headers ?? {}) },
+    headers: {
+      "content-type": "application/json",
+      ...authHeaders(),
+      ...(init?.headers ?? {}),
+    },
     cache: "no-store",
   });
   if (!res.ok) {
@@ -41,7 +53,10 @@ export async function storeList<T = Record<string, unknown>>(q?: string, limit =
 }
 
 export async function storeGet<T = Record<string, unknown>>(id: string): Promise<T | null> {
-  const res = await fetch(`${BASE}/api/store/${APP_ID}/${encodeURIComponent(id)}`, { cache: "no-store" });
+  const res = await fetch(`${BASE}/api/store/${APP_ID}/${encodeURIComponent(id)}`, {
+    cache: "no-store",
+    headers: { ...authHeaders() },
+  });
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`crud ${res.status}`);
   const json = (await res.json()) as { doc: T };
@@ -127,12 +142,14 @@ export async function fileList(q?: string, limit = 100): Promise<FileMeta[]> {
 export async function fileDownload(fileId: string): Promise<{ buf: Buffer; meta: FileMeta }> {
   const metaRes = await fetch(`${BASE}/api/files/${APP_ID}/${encodeURIComponent(fileId)}/meta`, {
     cache: "no-store",
+    headers: { ...authHeaders() },
   });
   if (metaRes.status === 404) throw new Error("file not found");
   if (!metaRes.ok) throw new Error(`file meta ${metaRes.status}`);
   const meta = (await metaRes.json()) as FileMeta;
   const binRes = await fetch(`${BASE}/api/files/${APP_ID}/${encodeURIComponent(fileId)}`, {
     cache: "no-store",
+    headers: { ...authHeaders() },
   });
   if (!binRes.ok) throw new Error(`file download ${binRes.status}`);
   return { buf: Buffer.from(await binRes.arrayBuffer()), meta };
