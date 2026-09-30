@@ -8,6 +8,7 @@ import {
   storeCreate,
   storePut,
   storePatch,
+  storeDelete,
   fileUpload,
   fileList,
   type FileMeta,
@@ -54,6 +55,13 @@ export type InvitationDoc = {
   token: string;
   businessId: string;
   invitedById: string;
+  createdAt: string;
+  expiresAt: string;
+};
+export type ResetDoc = {
+  kind: "reset";
+  userId: string;
+  token: string;
   createdAt: string;
   expiresAt: string;
 };
@@ -165,6 +173,7 @@ export type DocOf = {
   template: TemplateDoc;
   revenue: RevenueDoc;
   statement: StatementDoc;
+  reset: ResetDoc;
 };
 export type Kind = keyof DocOf;
 export type WithId<T> = T & { id: string };
@@ -207,6 +216,11 @@ export const users = {
     return { ...doc, id };
   },
   get: (id: string) => get("user", id),
+  async setPassword(id: string, passwordHash: string) {
+    const u = await get("user", id);
+    if (!u) return null;
+    return put("user", id, { ...u, passwordHash });
+  },
 };
 
 // ---- Businesses ----
@@ -287,6 +301,38 @@ export const invitations = {
     const inv = await get("invitation", id);
     if (!inv) return null;
     return put("invitation", id, { ...inv, status: "ACCEPTED" });
+  },
+};
+
+// ---- Password resets (manual-link, no email provider — same pattern as
+// invitations: the token is returned to the requester, who forwards it) ----
+export const resets = {
+  async create(userId: string) {
+    // Invalidate earlier outstanding tokens for this user first.
+    const items = await storeList<ResetDoc>(userId, 100);
+    for (const i of items) {
+      if (i.doc.kind === "reset" && i.doc.userId === userId) {
+        await storeDelete(i.id).catch(() => {});
+      }
+    }
+    const id = uid();
+    const doc: ResetDoc = {
+      kind: "reset",
+      userId,
+      token: uid().replace(/-/g, ""),
+      createdAt: now(),
+      expiresAt: new Date(Date.now() + 3600e3).toISOString(),
+    };
+    await storeCreate(doc as unknown as Record<string, unknown>, id);
+    return { ...doc, id };
+  },
+  async findByToken(token: string) {
+    const items = await storeList<ResetDoc>(token, 50);
+    const hit = items.find((i) => i.doc.kind === "reset" && i.doc.token === token);
+    return hit ? { ...hit.doc, id: hit.id } : null;
+  },
+  async consume(id: string) {
+    await storeDelete(id);
   },
 };
 

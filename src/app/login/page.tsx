@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import Container from "@mui/material/Container";
 import Box from "@mui/material/Box";
 import Card from "@mui/material/Card";
@@ -62,6 +63,7 @@ export default function LoginPage() {
             <Button type="submit" disabled={loading} variant="contained" fullWidth>
               {loading ? "Logging in..." : "Log in"}
             </Button>
+            <Link href="/reset">Forgot password?</Link>
           </Box>
         </CardContent>
       </Card>
