@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { documents } from "@/lib/db";
 import { getMembership, canUploadDocuments } from "@/lib/permissions";
 import { categorizeDocument } from "@/lib/categorize";
+import { isPdfMime, isVisionImageMime, MAX_VISION_BYTES } from "@/lib/ai";
 
 const TYPE_BY_MIME: [RegExp, string][] = [
   [/pdf/i, "INVOICE"],
@@ -71,11 +72,19 @@ export async function POST(request: Request, { params }: { params: { id: string 
   });
 
   // Meta Spark categorization with keyword fallback — never blocks upload.
+  // Images/PDFs are read by the model (vision); anything else — or an
+  // oversize file that would breach the relay's 15MB body cap — stays on
+  // the cheaper filename/hint text path.
   try {
+    const mime = file.type || "application/octet-stream";
+    const visionCapable = isVisionImageMime(mime) || isPdfMime(mime);
     const suggestion = await categorizeDocument({
       fileName: file.name,
       mimeType: file.type,
       hint: type,
+      ...(visionCapable && buffer.length <= MAX_VISION_BYTES
+        ? { dataBase64: buffer.toString("base64") }
+        : {}),
     });
     const updated = await documents.categorize(document.id, suggestion);
     return NextResponse.json(updated ?? document);

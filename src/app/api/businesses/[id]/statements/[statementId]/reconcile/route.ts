@@ -5,39 +5,13 @@ import { authOptions } from "@/lib/auth";
 import { documents, filings, revenues, statements } from "@/lib/db";
 import type { WithId, DocumentDoc, RevenueDoc } from "@/lib/db";
 import { getMembership, canManageFilings } from "@/lib/permissions";
-import { suggestNoInvoiceWithAI } from "@/lib/ai";
+import { analyzeStatementWithAI } from "@/lib/ai";
 
 const schema = z.object({
   filingPeriodId: z.string().min(1),
 });
 
 const DAY_MS = 86_400_000;
-
-// Bounded parallelism for independent calls: results stay in input order,
-// at most `limit` in flight.
-async function mapLimit<T, R>(
-  items: T[],
-  limit: number,
-  fn: (item: T, index: number) => Promise<R>
-): Promise<R[]> {
-  const out: R[] = new Array(items.length);
-  let next = 0;
-  const workers = Array.from(
-    { length: Math.min(Math.max(limit, 1), items.length) },
-    async () => {
-      while (next < items.length) {
-        const i = next++;
-        out[i] = await fn(items[i], i);
-      }
-    }
-  );
-  await Promise.all(workers);
-  return out;
-}
-
-// Per-credit AI hints run concurrently; the Meta relay caps each upstream
-// call at ~45s.
-const AI_CONCURRENCY = 5;
 
 function dateDiffDays(a: string, b: string): number {
   return Math.abs(Date.parse(a.slice(0, 10)) - Date.parse(b.slice(0, 10))) / DAY_MS;
@@ -128,15 +102,23 @@ export async function POST(
     }
   }
 
-  // Phase 2: independent AI hints, concurrently (results in tx order).
+  // Phase 2: one batched AI pass over the pending credits (~15k chars per
+  // upstream call, merged back in tx order — see analyzeStatementWithAI).
   // Non-binding hints only; noInvoiceReason stays null for a human.
-  const hints = await mapLimit(pending, AI_CONCURRENCY, ({ tx }) =>
-    suggestNoInvoiceWithAI({
-      description: tx.description,
-      counterpartyNameRaw: tx.counterpartyName,
+  const analyses = await analyzeStatementWithAI(
+    pending.map(({ tx }) => ({
+      id: tx.id,
+      date: tx.date,
       amount: tx.amount,
-    })
+      currency: tx.currency,
+      direction: tx.direction,
+      description: tx.description,
+      counterpartyName: tx.counterpartyName,
+    }))
   );
+  const hints = analyses.map((a) => ({ reason: a.noInvoiceReason }));
+  const txCategories: Record<string, string> = {};
+  for (const a of analyses) txCategories[a.id] = a.category;
 
   // Phase 3: create revenue entries sequentially in tx order.
   for (let i = 0; i < pending.length; i++) {
@@ -168,5 +150,5 @@ export async function POST(
     })
     .map((tx) => tx.id);
 
-  return NextResponse.json({ matched, created, unmatchedDebits, needsAttention });
+  return NextResponse.json({ matched, created, unmatchedDebits, needsAttention, txCategories });
 }
